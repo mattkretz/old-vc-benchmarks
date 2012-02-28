@@ -19,13 +19,7 @@ vc_determine_compiler()
 
 if(VC_COMPILER_IS_GCC AND VC_GCC_VERSION STREQUAL "4.6.0")
    list(APPEND disabled_targets
-      gather_avx
-      gather_sse
-      gather_VC_USE_SET_GATHERS_avx
-      gather_VC_USE_SET_GATHERS_sse
-      gather_sse_LOOP
-      scatter_avx
-      scatter_sse
+      dhryrock_avx_benchmark
       )
 endif()
 
