@@ -4,10 +4,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BUILD_DIR)
    message(ERROR "You don't want to configure in the source directory!")
 endif()
 
-project(Vc)
+project(Vc-Benchmarks)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-set(disabled_targets)
 
 include (VcMacros)
 include (AddTargetProperty)
@@ -17,6 +15,7 @@ find_package(Qt4)
 
 vc_determine_compiler()
 
+set(disabled_targets)
 if(VC_COMPILER_IS_GCC AND VC_GCC_VERSION STREQUAL "4.6.0")
    list(APPEND disabled_targets
       dhryrock_avx_benchmark
@@ -37,53 +36,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "" AND NOT CMAKE_CXX_FLAGS MATCHES "-O[123]")
    message(STATUS "WARNING! It seems you are compiling without optimization. Please set CMAKE_BUILD_TYPE.")
 endif(CMAKE_BUILD_TYPE STREQUAL "" AND NOT CMAKE_CXX_FLAGS MATCHES "-O[123]")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_library(CpuId STATIC cpuid.cpp)
-add_target_property(CpuId LABELS "other")
-
-if(USE_AVX)
-   add_library(Vc STATIC vector.cpp common/support.cpp avx/sorthelper.cpp)
-else()
-   add_library(Vc STATIC vector.cpp common/support.cpp)
-endif()
-add_target_property(Vc COMPILE_FLAGS "-DVC_COMPILE_LIB")
-add_target_property(Vc LABELS "other")
-
 add_custom_target(other VERBATIM)
 add_custom_target(Scalar COMMENT "build Scalar code" VERBATIM)
 add_custom_target(SSE COMMENT "build SSE code" VERBATIM)
 add_custom_target(AVX COMMENT "build AVX code" VERBATIM)
-add_dependencies(other Vc)
-
-install(TARGETS Vc DESTINATION lib/)
-install(DIRECTORY include/Vc/ DESTINATION include/Vc)
-install(DIRECTORY scalar sse avx common DESTINATION include/Vc FILES_MATCHING REGEX "/*.(h|tcc|def)$")
-
-install(FILES
-   cmake/VcMacros.cmake
-   cmake/FindVc.cmake
-   cmake/OptimizeForArchitecture.cmake
-   cmake/AddCompilerFlag.cmake
-   cmake/MacroEnsureVersion.cmake
-   cmake/CheckCCompilerFlag.cmake
-   DESTINATION share/Vc/cmake/
-   )
-
-include (CTest)
-configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_BINARY_DIR}/CTestCustom.cmake COPYONLY)
-if(BUILD_TESTING)
-   add_subdirectory(tests)
-endif(BUILD_TESTING)
 
 set(BUILD_BENCHMARKS TRUE CACHE BOOL "Build benchmarks.")
 if(BUILD_BENCHMARKS)
    add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
-
-set(BUILD_EXAMPLES FALSE CACHE BOOL "Build examples.")
-if(BUILD_EXAMPLES)
-   add_subdirectory(examples)
-endif(BUILD_EXAMPLES)
-
-mark_as_advanced(prototypes_header)
