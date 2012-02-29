@@ -5,7 +5,15 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 endif()
 
 project(Vc-Benchmarks)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+find_path(VC_SOURCE_DIR include/Vc/version.h PATHS "${CMAKE_SOURCE_DIR}/..")
+find_library(VC_LIBRARY Vc PATHS "${CMAKE_BINARY_DIR}/.." NO_DEFAULT_PATH)
+find_library(CPUID_LIBRARY CpuId PATHS "${CMAKE_BINARY_DIR}/.." NO_DEFAULT_PATH)
+if(NOT VC_SOURCE_DIR OR NOT VC_LIBRARY OR NOT CPUID_LIBRARY)
+   message(ERROR "Vc-Benchmarks requires the path to the Vc source and libVc that you want to benchmark.")
+endif()
+
+set(CMAKE_MODULE_PATH "${VC_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake")
+include_directories("${VC_SOURCE_DIR}/include" "${VC_SOURCE_DIR}")
 
 include (VcMacros)
 include (AddTargetProperty)
