@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.1)
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BUILD_DIR)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
    message(ERROR "You don't want to configure in the source directory!")
 endif()
 
@@ -169,7 +169,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
       add_custom_command(TARGET rtwrapper POST_BUILD
          COMMAND sudo chown root rtwrapper
          COMMAND sudo chmod +s rtwrapper
-         WORKING_DIRECTORY "${CMAKE_CURRENT_BUILD_DIR}"
+         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
          COMMENT "Making the rtwrapper suid root"
          )
    endif(REALTIME_BENCHMARKS)
