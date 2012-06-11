@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
 # coding:utf-8
 
+argv = ARGV
+gnuplotOptions = {# {{{
+    :font => 'CM Sans,5',
+    :size => '19.55cm,11cm',
+    :svg => false
+}# }}}
 class LabelTranslation #{{{
     def initialize(trans = Hash.new)
         @trans = {
@@ -61,6 +67,7 @@ class SortOrder #{{{1
 end #}}}1
 benchmarks = {
     'memio' => { #{{{1
+        :key => 'right top',
         :sort => [:groups, :bars, :clusters],
         :pageColumn => 'MemorySize',
         :groupColumn => 'benchmark.name',
@@ -156,6 +163,37 @@ benchmarks = {
         :ylabel => 'Operations / Cycle'
     } #}}}1
 }
+if argv.include? '--help' or argv.include? '-h'# {{{
+    puts "Usage: plot.rb [<options>] [<list of benchmarks>]"
+    puts
+    puts "Options:"
+    puts "  -h|--help            This message."
+    puts "  --debug              Only print gnuplot script to stdout."
+    puts "  --font <family,size> Define the font. (default: #{gnuplotOptions[:font]})"
+    puts "  --size <w,h>         Define the page size. (default: #{gnuplotOptions[:size]})"
+    puts "  --svg                Output to SVG instead of PDF"
+    puts
+    puts "Available benchmarks:"
+    benchmarks.each do |b|
+        puts "  #{b[0]}"
+    end
+    puts "  mandelbrot"
+    exit
+end# }}}
+if argv.include? '--font'# {{{
+    p = argv[argv.index('--font') + 1]
+    argv = argv - ['--font', p]
+    gnuplotOptions[:font] = p
+end
+if argv.include? '--size'
+    p = argv[argv.index('--size') + 1]
+    argv = argv - ['--size', p]
+    gnuplotOptions[:size] = p
+end
+if argv.include? '--svg'
+    argv = argv - ['--svg']
+    gnuplotOptions[:svg] = true
+end# }}}
 sortOrder = SortOrder.new([ #{{{1
     'sfloat_v',
     'float_v',
@@ -383,8 +421,8 @@ class DataParser #{{{1
     end #}}}2
     attr_reader :version
 end #}}}1
-gnuplot = if ARGV.include? '--debug' #{{{1
-    ARGV = ARGV - ['--debug']
+gnuplot = if argv.include? '--debug' #{{{1
+    argv = argv - ['--debug']
     STDOUT
 else
     IO.popen("gnuplot", 'w')
@@ -426,12 +464,17 @@ set style line 24 lc rgbcolor "#737373"
 
 set style increment user
 
-set terminal pdf color noenhanced font "CM Sans,5" size 19.55cm,11cm
+EOF
+if gnuplotOptions[:svg]
+    gnuplot.puts "set terminal svg noenhanced size #{gnuplotOptions[:size]} font \"#{gnuplotOptions[:font]}\""
+else
+    gnuplot.puts "set terminal pdf color noenhanced font \"#{gnuplotOptions[:font]}\" size #{gnuplotOptions[:size]}"
+end
+gnuplot.print <<EOF
 set pointsize 0.6
 set style histogram errorbars gap 1
 set style data histogram
 set style fill transparent solid 0.85 noborder
-set key right top
 set border 10       # only lines on the left and right
 set boxwidth 0.91      # width of the bars
 set xtics scale 0 # no tics on below histogram bars
@@ -445,7 +488,7 @@ EOF
 #}}}1
 # ##### MAIN: process benchmarks {{{1
 pdfs = Array.new
-(ARGV.empty? ? benchmarks : (ARGV - ['mandelbrot'])).each do |bench|
+(argv.empty? ? benchmarks : (argv - ['mandelbrot'])).each do |bench|
     if bench.is_a? Array
         opt = bench[1]
         bench = bench[0]
@@ -458,6 +501,7 @@ pdfs = Array.new
     next if dp.empty?
 
     sort = opt[:sort] ? opt[:sort] : Array.new
+    key = opt[:key] ? opt[:key] : 'left top'
 
     col = opt[:dataColumn]
     if dp.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
@@ -465,12 +509,13 @@ pdfs = Array.new
     end
     maxy = dp.maximumY col
 
-    pdffile = (opt[:outname] or bench) + '.pdf'
+    pdffile = (opt[:outname] or bench) + (gnuplotOptions[:svg] ? '.svg' : '.pdf')
     pdfs << pdffile
     gnuplot.print <<EOF
 #set yrange [0:#{maxy}]
 set output "#{pdffile}"
 set ylabel "#{opt[:ylabel] or opt[:dataColumn].sub /\//, ' / '}"
+set key #{key}
 EOF
 
     pageNames = dp.list(opt[:pageColumn])
@@ -531,7 +576,7 @@ plot \
 EOF
     end
 end #}}}1
-if ARGV.empty? or ARGV.include? "mandelbrot" #{{{1
+if argv.empty? or argv.include? "mandelbrot" #{{{1
     tr = LabelTranslation.new
     mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
 
@@ -574,7 +619,7 @@ end #}}}1
 # all.pdf {{{1
 gnuplot.close
 
-if ARGV.empty?
+if argv.empty?
     `a2ps -q -M a4 -l 120 --columns=1 --rows=1 metadata -o -|ps2pdf -sPAPERSIZE=a4 - metadata.pdf`
     `pdftk metadata.pdf #{pdfs.join ' '} cat output tmp.pdf` or fail
     metain = File.new 'metadata', 'r'
