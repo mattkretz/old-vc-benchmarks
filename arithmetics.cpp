@@ -20,8 +20,7 @@
 #include <Vc/Vc>
 #include <Vc/limits>
 #include "benchmark.h"
-#include "random.h"
-#include "../cpuid.h"
+#include <Vc/cpuid.h>
 
 #include <cstdlib>
 
@@ -42,7 +41,7 @@ template<typename Vector> struct Arithmetics
         mlock(data, (Factor + 1) * sizeof(Vector));
 #endif
         for (int i = 0; i < Factor + 1; ++i) {
-            data[i] = PseudoRandom<Vector>::next();
+            data[i] = Vector::Random();
             data[i](data[i] == Vector(Zero)) += Vector(One);
         }
 

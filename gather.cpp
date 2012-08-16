@@ -328,7 +328,7 @@ template<typename Vector> struct GatherBenchmark
     }
 };
 
-#include "../cpuid.h"
+#include <Vc/cpuid.h>
 
 int bmain()
 {
