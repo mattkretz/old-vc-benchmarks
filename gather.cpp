@@ -141,9 +141,7 @@ template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHe
 
 template<> const float_m FullMaskHelper<float_v>::fullMask = float_m(One);
 template<> const short_m FullMaskHelper<short_v>::fullMask = short_m(One);
-#if VC_IMPL_SSE
 template<> const sfloat_m FullMaskHelper<sfloat_v>::fullMask = sfloat_m(One);
-#endif
 
 static int g_L1ArraySize = 0;
 static int g_L2ArraySize = 0;
