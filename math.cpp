@@ -1,6 +1,6 @@
-/*  This file is part of the Vc library.
+/*  This file is part of the Vc library. {{{
 
-    Copyright (C) 2009 Matthias Kretz <kretz@kde.org>
+    Copyright (C) 2009-2012 Matthias Kretz <kretz@kde.org>
 
     Vc is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as
@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public
     License along with Vc.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+}}}*/
 
 #include <Vc/Vc>
 #include "benchmark.h"
@@ -180,3 +180,5 @@ int bmain()
     Helper<double_v>::run();
     return 0;
 }
+
+// vim: foldmethod=marker
