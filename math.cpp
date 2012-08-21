@@ -19,7 +19,6 @@
 
 #include <Vc/Vc>
 #include "benchmark.h"
-#include "random.h"
 #include <Vc/cpuid.h>
 
 #include <cstdlib>
@@ -31,154 +30,103 @@ template<typename Vector> struct Helper
     typedef typename Vector::Mask Mask;
     typedef typename Vector::EntryType Scalar;
 
-    static void run()
+    const int NVectors;
+    const int opPerSecondFactor;
+    Vector *data;
+
+    Helper()/*{{{*/
+        : NVectors(CpuId::L1Data() / (2 * sizeof(Vector))),
+        opPerSecondFactor(NVectors * Vector::Size),
+        data(new Vector[NVectors])
     {
-        const int Factor = CpuId::L1Data() / sizeof(Vector);
-        const int opPerSecondFactor = Factor * Vector::Size;
-
-        Vector *data = new Vector[Factor];
 #ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(data, Factor * sizeof(Vector));
+        mlock(data, NVectors * sizeof(Vector));
 #endif
-        for (int i = 0; i < Factor; ++i) {
-            data[i] = PseudoRandom<Vector>::next();
+        for (int i = 0; i < NVectors; ++i) {
+            data[i] = Vector::Random();
         }
-
-        {
-            Benchmark timer("round", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = round(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("sqrt", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = sqrt(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("log", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = log(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("sin", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = sin(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("cos", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = cos(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("asin", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = asin(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("atan", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = atan(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("atan2", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor - 1; ++i) {
-                    Vector tmp = atan2(data[i], data[i + 1]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("rsqrt", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = rsqrt(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-        {
-            Benchmark timer("recip", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    Vector tmp = reciprocal(data[i]);
-                    Vc::forceToRegisters(tmp);
-                }
-                timer.Stop();
-            }
-            timer.Print();
-        }
-
-        delete[] data;
     }
+
+    ~Helper()
+    {
+        delete[] data;
+    }/*}}}*/
+
+    void benchmarkFunction(const char *name, Vector (*fun)(const Vector &, const Vector &))/*{{{*/
+    {
+        Benchmark timer(name, opPerSecondFactor, "Op");
+        while (timer.wantsMoreDataPoints()) {
+            timer.Start();
+            for (int i = 0; i < NVectors - 1; ++i) {
+                Vector tmp = fun(data[i], data[i + 1]);
+                Vc::forceToRegisters(tmp);
+            }
+            Vector tmp = fun(data[NVectors - 1], data[0]);
+            Vc::forceToRegisters(tmp);
+            timer.Stop();
+        }
+        timer.Print();
+    }
+
+    void benchmarkFunction(const char *name, Vector (*fun)(const Vector &))
+    {
+        Benchmark timer(name, opPerSecondFactor, "Op");
+        while (timer.wantsMoreDataPoints()) {
+            timer.Start();
+            for (int i = 0; i < NVectors; ++i) {
+                Vector tmp = fun(data[i]);
+                Vc::forceToRegisters(tmp);
+            }
+            timer.Stop();
+        }
+        timer.Print();
+    }
+
+    void benchmarkFunction(const char *name, Vector (*fun)(Vector))
+    {
+        Benchmark timer(name, opPerSecondFactor, "Op");
+        while (timer.wantsMoreDataPoints()) {
+            timer.Start();
+            for (int i = 0; i < NVectors; ++i) {
+                Vector tmp = fun(data[i]);
+                Vc::forceToRegisters(tmp);
+            }
+            timer.Stop();
+        }
+        timer.Print();
+    }/*}}}*/
+
+    void run()/*{{{*/
+    {
+        benchmarkFunction("round", Vc::round);
+        benchmarkFunction( "sqrt", Vc::sqrt);
+        benchmarkFunction("rsqrt", Vc::rsqrt);
+        benchmarkFunction("reciprocal", Vc::reciprocal);
+        benchmarkFunction(  "abs", Vc::abs);
+        benchmarkFunction(  "sin", Vc::sin);
+        benchmarkFunction(  "cos", Vc::cos);
+        benchmarkFunction( "asin", Vc::asin);
+        benchmarkFunction("floor", Vc::floor);
+        benchmarkFunction( "ceil", Vc::ceil);
+        benchmarkFunction(  "exp", Vc::exp);
+        benchmarkFunction(  "log", Vc::log);
+        benchmarkFunction( "log2", Vc::log2);
+        benchmarkFunction("log10", Vc::log10);
+        benchmarkFunction( "atan", Vc::atan);
+        benchmarkFunction("atan2", Vc::atan2);
+    }/*}}}*/
 };
 
-int bmain()
+int bmain()/*{{{*/
 {
     Benchmark::addColumn("datatype");
     Benchmark::setColumnData("datatype", "float_v");
-    Helper<float_v>::run();
+    Helper<float_v>().run();
     Benchmark::setColumnData("datatype", "sfloat_v");
-    Helper<sfloat_v>::run();
+    Helper<sfloat_v>().run();
     Benchmark::setColumnData("datatype", "double_v");
-    Helper<double_v>::run();
+    Helper<double_v>().run();
     return 0;
-}
+}/*}}}*/
 
 // vim: foldmethod=marker
