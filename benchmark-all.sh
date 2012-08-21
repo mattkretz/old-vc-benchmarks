@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 case "@QT4_FOUND@" in
   YES|TRUE|true|yes|on|ON) haveQt4=true ;;
@@ -46,10 +46,44 @@ machine		: `uname -m`
 `grep -m1 -B2 'model name' /proc/cpuinfo`
 EOF
 
+# examine the CPU topology, we'd like to run benchmarks on all cores, but keep thread siblings idle (i.e. Intel Hyperthreading or AMD Modules)
+blockedIds=()
+usableCores=()
+for cpu in `find /sys/devices/system/cpu -name "cpu[0-9]*"`; do
+  coreid=${cpu##*/cpu}
+  if [[ -z "${blockedIds[$coreid]}" ]]; then
+    usableCores=(${usableCores[@]} $coreid)
+    blockedIds[$coreid]=1
+    if [[ -r $cpu/topology/thread_siblings_list ]]; then
+      read siblings < $cpu/topology/thread_siblings_list
+      case "$siblings" in
+        *-*)
+          start=${siblings%%-*}
+          end=${siblings##*-}
+          for (( i=$start; $i<=$end; ++i)); do
+            blockedIds[$i]=1
+          done
+          ;;
+      esac
+    fi
+  fi
+done
+idleCores=(${usableCores[@]})
+
+echo "The following cores will be used for parallel execution of the benchmarks: ${idleCores[@]}"
+echo
+
 executeBench()
 {
   name=${1}_${2}
+  if [[ -z "${idleCores[@]}" ]]; then
+    wait
+    idleCores=(${usableCores[@]})
+  fi
   if test -x ./$name; then
+    coreid=${idleCores[${#idleCores[@]}-1]}
+    unset idleCores[${#idleCores[@]}-1]
+    (
     outfile=$resultsDir/$name
     if test "$2" = "avx"; then
       $haveXop && outfile=${outfile}-mxop
@@ -58,13 +92,14 @@ executeBench()
       $haveAvx && outfile=${outfile}-mavx
     fi
     outfile=${outfile}.dat
-    printf "%22s -o %s" "$name" "$outfile"
-    if ./$name -o $outfile >/dev/null 2>&1; then
-      printf "\tDone.\n"
+    printf "%22s -o %s\tStarted.\n" "$name" "$outfile"
+    if numactl --physcpubind=$coreid --localalloc ./$name -o $outfile >/dev/null 2>&1; then
+      printf "%22s -o %s\tDone.\n" "$name" "$outfile"
     else
-      printf "\tFAILED.\n"
+      printf "%22s -o %s\tFAILED.\n" "$name" "$outfile"
       rm -f $outfile
     fi
+    ) &
   else
     printf "%22s SKIPPED\n" "$name"
   fi
