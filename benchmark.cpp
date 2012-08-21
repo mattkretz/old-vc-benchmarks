@@ -244,7 +244,7 @@ bool Benchmark::wantsMoreDataPoints() const
     } else if (m_dataPointsCount < 30) { // we want initial statistics
         return true;
     }
-    return m_stddev[0] * m_dataPointsCount > 1.0004 * m_mean[0] * m_mean[0]; // stop if the relative error is below 2% already
+    return m_stddev[0] * m_dataPointsCount > 1.0025 * m_mean[0] * m_mean[0]; // stop if the relative error is below 5% already
 }
 
 void Benchmark::Mark()
