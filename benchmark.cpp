@@ -19,7 +19,7 @@
 
 #include "benchmark.h"
 #include <Vc/Vc>
-#include <Vc/common/support.h>
+#include <common/support.h>
 #include <map>
 #include <set>
 

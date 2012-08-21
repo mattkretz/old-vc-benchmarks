@@ -1,11 +1,6 @@
-# Locate the Vc template library. Vc can be found at http://gitorious.org/Vc/
+# Locate the Vc build and source directories.
 #
 # Copyright 2009-2012   Matthias Kretz <kretz@kde.org>
-#
-# This file is meant to be copied into projects that want to use Vc. It will
-# search for VcConfig.cmake, which ships with Vc and will provide up-to-date
-# buildsystem changes. Thus there should not be any need to update FindVc.cmake
-# again after you integrated it into your project.
 #
 # This module defines the following variables:
 # Vc_FOUND
@@ -26,7 +21,34 @@
 # Vc_SSE_INTRINSICS_BROKEN
 # Vc_AVX_INTRINSICS_BROKEN
 
-find_package(Vc ${Vc_FIND_VERSION} QUIET NO_MODULE PATHS $ENV{HOME} /opt/Vc)
+set(Vc_FOUND false)
+set(Vc_BINARY_DIR "$ENV{HOME}/obj/Vc" CACHE PATH "Path to the build dir of Vc")
+file(READ "${Vc_BINARY_DIR}/CMakeCache.txt" _Vc_CMakeCache)
+if(_Vc_CMakeCache MATCHES "Vc_SOURCE_DIR:STATIC=([^\n]*)")
+   set(Vc_SOURCE_DIR "${CMAKE_MATCH_1}")
+   mark_as_advanced(Vc_SOURCE_DIR)
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Vc CONFIG_MODE)
+   set(Vc_INCLUDE_DIR "${Vc_SOURCE_DIR}/include;${Vc_SOURCE_DIR}")
+
+   if(NOT Vc_BINARY_DIR STREQUAL _Vc_PREVIOUS_BINARY_DIR)
+      set(_Vc_PREVIOUS_BINARY_DIR "${Vc_BINARY_DIR}" CACHE STRING "internal")
+      unset(_libVc CACHE)
+      unset(_libCpuId CACHE)
+      find_library(_libVc Vc HINTS "${Vc_BINARY_DIR}" NO_DEFAULT_PATH)
+      find_library(_libCpuId CpuId HINTS "${Vc_BINARY_DIR}" NO_DEFAULT_PATH)
+      mark_as_advanced(_Vc_PREVIOUS_BINARY_DIR _libVc _libCpuId)
+   endif()
+   get_filename_component(Vc_LIB_DIR "${_libVc}" PATH)
+   set(Vc_LIBRARIES "${_libVc}")
+   if(_libCpuId)
+      list(APPEND Vc_LIBRARIES "${_libCpuId}")
+   endif()
+
+   set(Vc_CMAKE_MODULES_DIR "${Vc_SOURCE_DIR}/cmake")
+   include("${Vc_CMAKE_MODULES_DIR}/VcMacros.cmake")
+   set(Vc_DEFINITIONS)
+   vc_set_preferred_compiler_flags()
+
+   message(STATUS "Vc at: ${Vc_BINARY_DIR} ${Vc_SOURCE_DIR} ${Vc_INCLUDE_DIR}")
+   set(Vc_FOUND true)
+endif()
