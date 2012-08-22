@@ -530,7 +530,6 @@ bool Benchmark::Print()
 
 void printHelp(const char *name) {
     std::cout << "Usage " << name << " [OPTION]...\n"
-        << "Measure throughput and latency of memory in steps of 1GB\n\n"
         << "  -h, --help          print this message\n"
         << "  -o <filename>       output measurements to a file instead of stdout\n"
         << "  --skip <name> <value>  skip tests with the name/column set to the given value\n"
