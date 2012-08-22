@@ -52,6 +52,8 @@
 //#define VC_USE_CPU_TIME
 #endif
 
+#include <common/macros.h>
+
 class Benchmark
 {
     friend int main(int, char**);
@@ -92,9 +94,9 @@ public:
     void changeInterpretation(double factor, const char *X);
 
     bool wantsMoreDataPoints() const;
-    bool Start();
+    inline ALWAYS_INLINE_L bool Start() ALWAYS_INLINE_R;
     void Mark();
-    void Stop();
+    inline ALWAYS_INLINE_L void Stop() ALWAYS_INLINE_R;
     bool Print();
 
 private:
@@ -125,7 +127,7 @@ private:
     static const char normalEsc [5];
 };
 
-inline bool Benchmark::Start()
+inline ALWAYS_INLINE bool Benchmark::Start()
 {
 #ifdef _MSC_VER
     QueryPerformanceCounter((LARGE_INTEGER *)&fRealTime);
@@ -146,7 +148,7 @@ static inline double convertTimeSpec(const struct timespec &ts)
 }
 #endif
 
-inline void Benchmark::Stop()
+inline ALWAYS_INLINE void Benchmark::Stop()
 {
     fTsc.Stop();
 #ifdef _MSC_VER
