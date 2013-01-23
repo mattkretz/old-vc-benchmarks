@@ -54,6 +54,12 @@
 
 #include <common/macros.h>
 
+#ifdef ALWAYS_INLINE
+#define Vc_ALWAYS_INLINE ALWAYS_INLINE
+#define Vc_ALWAYS_INLINE_L ALWAYS_INLINE_L
+#define Vc_ALWAYS_INLINE_R ALWAYS_INLINE_R
+#endif
+
 class Benchmark
 {
     friend int main(int, char**);
@@ -94,9 +100,9 @@ public:
     void changeInterpretation(double factor, const char *X);
 
     bool wantsMoreDataPoints() const;
-    inline ALWAYS_INLINE_L bool Start() ALWAYS_INLINE_R;
+    inline Vc_ALWAYS_INLINE_L bool Start() Vc_ALWAYS_INLINE_R;
     void Mark();
-    inline ALWAYS_INLINE_L void Stop() ALWAYS_INLINE_R;
+    inline Vc_ALWAYS_INLINE_L void Stop() Vc_ALWAYS_INLINE_R;
     bool Print();
 
 private:
@@ -127,7 +133,7 @@ private:
     static const char normalEsc [5];
 };
 
-inline ALWAYS_INLINE bool Benchmark::Start()
+inline Vc_ALWAYS_INLINE bool Benchmark::Start()
 {
 #ifdef _MSC_VER
     QueryPerformanceCounter((LARGE_INTEGER *)&fRealTime);
@@ -148,7 +154,7 @@ static inline double convertTimeSpec(const struct timespec &ts)
 }
 #endif
 
-inline ALWAYS_INLINE void Benchmark::Stop()
+inline Vc_ALWAYS_INLINE void Benchmark::Stop()
 {
     fTsc.Stop();
 #ifdef _MSC_VER
