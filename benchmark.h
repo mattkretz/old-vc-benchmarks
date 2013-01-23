@@ -42,7 +42,7 @@
 #endif
 #ifdef __APPLE__
 #include <mach/mach_time.h>
-// method to get monotonic mac time, inspired by 
+// method to get monotonic mac time, inspired by
 // http://www.wand.net.nz/~smr26/wordpress/2009/01/19/monotonic-time-in-mac-os-x/
 #endif
 
@@ -164,11 +164,12 @@ inline Vc_ALWAYS_INLINE void Benchmark::Stop()
     const double elapsedRealTime = static_cast<double>(real - fRealTime) / freq;
 #elif defined(__APPLE__)
     uint64_t real = mach_absolute_time();
-    static mach_timebase_info_data_t info = {0,0};  
-    
-    if (info.denom == 0)  
-    	mach_timebase_info(&info);  
-    
+    static mach_timebase_info_data_t info = {0,0};
+
+    if (info.denom == 0) {
+        mach_timebase_info(&info);
+    }
+
     uint64_t nanos = (real - fRealTime ) * (info.numer / info.denom);
     const double elapsedRealTime = nanos * 1e-9;
 #else
@@ -216,11 +217,11 @@ extern const char *printHelp2;
 template<typename T, int S> struct KeepResultsHelper {
     static inline void keepDirty(T &tmp0) {
 #ifdef __GNUC__
-		asm volatile("":"+r"(tmp0));
+        asm volatile("":"+r"(tmp0));
 #else
-		blackHole[0] = tmp0;
+        blackHole[0] = tmp0;
 #endif
-	}
+    }
     static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
             const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
 #ifdef __GNUC__
@@ -234,18 +235,18 @@ template<typename T, int S> struct KeepResultsHelper {
         asm volatile(""::"r"(tmp6), "r"(tmp7));
 #endif
 #else // __GNUC__
-		blackHole[0] = tmp0;
-		blackHole[1] = tmp1;
-		blackHole[2] = tmp2;
-		blackHole[3] = tmp3;
-		blackHole[4] = tmp4;
-		blackHole[5] = tmp5;
-		blackHole[6] = tmp6;
-		blackHole[7] = tmp7;
+        blackHole[0] = tmp0;
+        blackHole[1] = tmp1;
+        blackHole[2] = tmp2;
+        blackHole[3] = tmp3;
+        blackHole[4] = tmp4;
+        blackHole[5] = tmp5;
+        blackHole[6] = tmp6;
+        blackHole[7] = tmp7;
 #endif // __GNUC__
     }
 #ifndef __GNUC__
-	static T blackHole[8];
+    static T blackHole[8];
 #endif
 };
 
