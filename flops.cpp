@@ -325,6 +325,16 @@ int bmain()
             ///////////////////////////////////////
 
             for (int i = 0; i < Factor; ++i) {
+#if VC_IMPL_FMA4
+                    x[0] = _mm256_macc_ps(y, x[0], y);
+                    x[1] = _mm256_macc_ps(y, x[1], y);
+                    x[2] = _mm256_macc_ps(y, x[2], y);
+                    x[3] = _mm256_macc_ps(y, x[3], y);
+                    x[4] = _mm256_macc_ps(y, x[4], y);
+                    x[5] = _mm256_macc_ps(y, x[5], y);
+                    x[6] = _mm256_macc_ps(y, x[6], y);
+                    x[7] = _mm256_macc_ps(y, x[7], y);
+#else
                     x[0] = _mm256_add_ps(_mm256_mul_ps(y, x[0]), y);
                     x[1] = _mm256_add_ps(_mm256_mul_ps(y, x[1]), y);
                     x[2] = _mm256_add_ps(_mm256_mul_ps(y, x[2]), y);
@@ -333,6 +343,7 @@ int bmain()
                     x[5] = _mm256_add_ps(_mm256_mul_ps(y, x[5]), y);
                     x[6] = _mm256_add_ps(_mm256_mul_ps(y, x[6]), y);
                     x[7] = _mm256_add_ps(_mm256_mul_ps(y, x[7]), y);
+#endif
             }
 
             ///////////////////////////////////////
