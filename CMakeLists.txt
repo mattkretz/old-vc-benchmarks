@@ -177,6 +177,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
    endif(REALTIME_BENCHMARKS)
 endif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
+vc_add_benchmark(interleavedmemorywrapper)
 vc_add_benchmark(arithmetics)
 vc_add_benchmark(arithmetics2)
 vc_add_benchmark(flops)
