@@ -29,6 +29,11 @@ if(NOT CMAKE_BUILD_TYPE)
       FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+set(USE_RDTSCP TRUE CACHE STRING "Use to disable the use of the rdtscp instruction. E.g. valgrind doesn't work with it.")
+if(NOT USE_RDTSCP)
+   add_definitions(-DNO_RDTSCP)
+endif()
+
 AddCompilerFlag("-frename-registers")
 
 add_custom_target(other VERBATIM)
