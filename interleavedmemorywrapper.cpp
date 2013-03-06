@@ -26,6 +26,16 @@ using Vc::double_v;
 using Vc::int_v;
 using Vc::short_v;
 
+template<int Count, typename V, typename T, typename I> struct NormalizeHelper;
+template<typename V, typename T, typename I> struct NormalizeHelper<2, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b;                   (a, b                  ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b                                    ); wrapper[i] = (a*factor, b*factor                                                            ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<3, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c;                (a, b, c               ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c                              ); wrapper[i] = (a*factor, b*factor, c*factor                                                  ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<4, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c, d;             (a, b, c, d            ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c + d*d                        ); wrapper[i] = (a*factor, b*factor, c*factor, d*factor                                        ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<5, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c, d, e;          (a, b, c, d, e         ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c + d*d + e*e                  ); wrapper[i] = (a*factor, b*factor, c*factor, d*factor, e*factor                              ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<6, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c, d, e, f;       (a, b, c, d, e, f      ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c + d*d + e*e + f*f            ); wrapper[i] = (a*factor, b*factor, c*factor, d*factor, e*factor, f*factor                    ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<7, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c, d, e, f, g;    (a, b, c, d, e, f, g   ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c + d*d + e*e + f*f + g*g      ); wrapper[i] = (a*factor, b*factor, c*factor, d*factor, e*factor, f*factor, g*factor          ); } };
+template<typename V, typename T, typename I> struct NormalizeHelper<8, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c, d, e, f, g, h; (a, b, c, d, e, f, g, h) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c + d*d + e*e + f*f + g*g + h*h); wrapper[i] = (a*factor, b*factor, c*factor, d*factor, e*factor, f*factor, g*factor, h*factor); } };
+template<int Count, typename V, typename T, typename I> static void normalize(T &wrapper, const I &i) { NormalizeHelper<Count, V, T, I>::impl(wrapper, i); }
+
 template<int Count, typename V, typename T, typename I> struct DeinterleaveHelper;
 template<typename V, typename T, typename I> struct DeinterleaveHelper<2, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b;                   (a, b) = wrapper[i];                   keepResults(a, b); } };
 template<typename V, typename T, typename I> struct DeinterleaveHelper<3, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c;                (a, b, c) = wrapper[i];                keepResults(a, b, c); } };
@@ -84,28 +94,58 @@ template<typename V> class Runner
         mlock(&data[0], MemorySize * sizeof(TestStruct));
 #endif
 
+        Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
         benchmark_loop(Benchmark("deinterleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
             for (size_t i = 0; i < MemorySize; i += V::Size) {
                 deinterleave<COUNT, V>(wrapper, i);
             }
         }
         benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
             for (size_t i = 0; i < MemorySize; i += V::Size) {
                 interleave<COUNT, V>(wrapper, i);
             }
         }
         benchmark_loop(Benchmark("deinterleave (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
-            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
             for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
                 deinterleave<COUNT, V>(wrapper, i);
             }
         }
         benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
             for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
                 interleave<COUNT, V>(wrapper, i);
+            }
+        }
+        benchmark_loop(Benchmark("normalize interleaved vectors (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
+            for (size_t i = 0; i < MemorySize; i += V::Size) {
+                normalize<COUNT, V>(wrapper, i);
+            }
+        }
+        benchmark_loop(Benchmark("normalize interleaved vectors (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
+            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
+                normalize<COUNT, V>(wrapper, i);
+            }
+        }
+        benchmark_loop(Benchmark("normalize interleaved vectors (manually)", MemorySize * sizeof(TestStruct), "Byte")) {
+            for (size_t i = 0; i < MemorySize; i += V::Size) {
+                V x[COUNT];
+                for (int j = 0; j < V::Size; ++j) {
+                    for (int k = 0; k < COUNT; ++k) {
+                        x[k][j] = data[i + j].x[k];
+                    }
+                }
+                V sum = x[0] * x[0];
+                for (int k = 1; k < COUNT; ++k) {
+                    sum += x[k] * x[k];
+                }
+                const V factor = std::sqrt(sum);
+                for (int k = 0; k < COUNT; ++k) {
+                    x[k] *= factor;
+                }
+                for (int j = 0; j < V::Size; ++j) {
+                    for (int k = 0; k < COUNT; ++k) {
+                        data[i + j].x[k] = x[k][j];
+                    }
+                }
             }
         }
     }
@@ -149,8 +189,8 @@ int bmain()
     Benchmark::setColumnData("datatype", "sfloat_v");
     Runner<sfloat_v>::run();
     Benchmark::setColumnData("datatype", "int_v");
-    Runner<int_v>::run();
+    //Runner<int_v>::run();
     Benchmark::setColumnData("datatype", "short_v");
-    Runner<short_v>::run();
+    //Runner<short_v>::run();
     return 0;
 }
