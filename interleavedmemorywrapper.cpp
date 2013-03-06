@@ -26,15 +26,15 @@ using Vc::double_v;
 using Vc::int_v;
 using Vc::short_v;
 
-template<int Count, typename V, typename T> struct DeinterleaveHelper;
-template<typename V, typename T> struct DeinterleaveHelper<2, V, T> { static void impl(const T &wrapper, size_t i) { V a, b;                   (a, b) = wrapper[i];                   keepResults(a, b); } };
-template<typename V, typename T> struct DeinterleaveHelper<3, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c;                (a, b, c) = wrapper[i];                keepResults(a, b, c); } };
-template<typename V, typename T> struct DeinterleaveHelper<4, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c, d;             (a, b, c, d) = wrapper[i];             keepResults(a, b, c, d); } };
-template<typename V, typename T> struct DeinterleaveHelper<5, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c, d, e;          (a, b, c, d, e) = wrapper[i];          keepResults(a, b, c, d, e); } };
-template<typename V, typename T> struct DeinterleaveHelper<6, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c, d, e, f;       (a, b, c, d, e, f) = wrapper[i];       keepResults(a, b, c, d, e, f); } };
-template<typename V, typename T> struct DeinterleaveHelper<7, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c, d, e, f, g;    (a, b, c, d, e, f, g) = wrapper[i];    keepResults(a, b, c, d, e, f, g); } };
-template<typename V, typename T> struct DeinterleaveHelper<8, V, T> { static void impl(const T &wrapper, size_t i) { V a, b, c, d, e, f, g, h; (a, b, c, d, e, f, g, h) = wrapper[i]; keepResults(a, b, c, d, e, f, g, h); } };
-template<int Count, typename V, typename T> static void deinterleave(const T &wrapper, size_t i) { DeinterleaveHelper<Count, V, T>::impl(wrapper, i); }
+template<int Count, typename V, typename T, typename I> struct DeinterleaveHelper;
+template<typename V, typename T, typename I> struct DeinterleaveHelper<2, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b;                   (a, b) = wrapper[i];                   keepResults(a, b); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<3, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c;                (a, b, c) = wrapper[i];                keepResults(a, b, c); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<4, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c, d;             (a, b, c, d) = wrapper[i];             keepResults(a, b, c, d); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<5, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c, d, e;          (a, b, c, d, e) = wrapper[i];          keepResults(a, b, c, d, e); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<6, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c, d, e, f;       (a, b, c, d, e, f) = wrapper[i];       keepResults(a, b, c, d, e, f); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<7, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c, d, e, f, g;    (a, b, c, d, e, f, g) = wrapper[i];    keepResults(a, b, c, d, e, f, g); } };
+template<typename V, typename T, typename I> struct DeinterleaveHelper<8, V, T, I> { static void impl(const T &wrapper, const I &i) { V a, b, c, d, e, f, g, h; (a, b, c, d, e, f, g, h) = wrapper[i]; keepResults(a, b, c, d, e, f, g, h); } };
+template<int Count, typename V, typename T, typename I> static void deinterleave(const T &wrapper, const I &i) { DeinterleaveHelper<Count, V, T, I>::impl(wrapper, i); }
 
 template<typename V> struct SomeData { static V x[8]; };
 template<> float_v SomeData<float_v>::x[8] = {};
@@ -43,15 +43,15 @@ template<> double_v SomeData<double_v>::x[8] = {};
 template<> int_v SomeData<int_v>::x[8] = {};
 template<> short_v SomeData<short_v>::x[8] = {};
 
-template<int Count, typename V, typename T> struct InterleaveHelper;
-template<typename V, typename T> struct InterleaveHelper<2, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1]); } };
-template<typename V, typename T> struct InterleaveHelper<3, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2]); } };
-template<typename V, typename T> struct InterleaveHelper<4, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3]); } };
-template<typename V, typename T> struct InterleaveHelper<5, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4]); } };
-template<typename V, typename T> struct InterleaveHelper<6, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5]); } };
-template<typename V, typename T> struct InterleaveHelper<7, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5], SomeData<V>::x[6]); } };
-template<typename V, typename T> struct InterleaveHelper<8, V, T> { static void impl(T &wrapper, size_t i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5], SomeData<V>::x[6], SomeData<V>::x[7]); } };
-template<int Count, typename V, typename T> static void interleave(T &wrapper, size_t i) { InterleaveHelper<Count, V, T>::impl(wrapper, i); }
+template<int Count, typename V, typename T, typename I> struct InterleaveHelper;
+template<typename V, typename T, typename I> struct InterleaveHelper<2, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<3, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<4, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<5, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<6, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<7, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5], SomeData<V>::x[6]); } };
+template<typename V, typename T, typename I> struct InterleaveHelper<8, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1], SomeData<V>::x[2], SomeData<V>::x[3], SomeData<V>::x[4], SomeData<V>::x[5], SomeData<V>::x[6], SomeData<V>::x[7]); } };
+template<int Count, typename V, typename T, typename I> static void interleave(T &wrapper, const I &i) { InterleaveHelper<Count, V, T, I>::impl(wrapper, i); }
 
 template<typename V> class Runner
 {
@@ -93,6 +93,18 @@ template<typename V> class Runner
         benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
             Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
             for (size_t i = 0; i < MemorySize; i += V::Size) {
+                interleave<COUNT, V>(wrapper, i);
+            }
+        }
+        benchmark_loop(Benchmark("deinterleave (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
+            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
+            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
+                deinterleave<COUNT, V>(wrapper, i);
+            }
+        }
+        benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
+            Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
+            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
                 interleave<COUNT, V>(wrapper, i);
             }
         }
