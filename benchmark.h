@@ -252,9 +252,16 @@ template<typename T, int S> struct KeepResultsHelper {
 
 #ifdef __GNUC__
 template<typename T>
-static inline void _keepXRegister(T x0, T x1, T x2, T x3, T x4, T x5, T x6, T x7)
+static inline __attribute__((always_inline)) void _keepXRegister(T x0, T x1, T x2, T x3, T x4, T x5, T x6, T x7)
 {
-    asm volatile(""::"x"(x0), "x"(x1), "x"(x2), "x"(x3), "x"(x4), "x"(x5), "x"(x6), "x"(x7));
+    asm (""::"x"(x0));
+    asm (""::"x"(x1));
+    asm (""::"x"(x2));
+    asm (""::"x"(x3));
+    asm (""::"x"(x4));
+    asm (""::"x"(x5));
+    asm (""::"x"(x6));
+    asm (""::"x"(x7));
 }
 #endif
 
