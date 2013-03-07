@@ -256,7 +256,7 @@ sortOrder = SortOrder.new([ #{{{1
 class ColumnFilter #{{{1
     def initialize(grep, name_column)
         @name_column = name_column.map {|i| [i[0], i[1], -1]}
-        @grep = grep.map do |v|
+        @grep = grep.flatten.map do |v|
             if v.is_a? String then
                 "\"#{v}\""
             else
@@ -543,9 +543,9 @@ EOF
             filters = Array.new
             titleNames.each do |title|
                 filters \
-                    << ColumnFilter.new([page, group[1], title[1]].flatten,
+                    << ColumnFilter.new([page, group[1], title[1]],
                                         [[title[0], col]]) \
-                    << ColumnFilter.new([page, group[1], title[1]].flatten,
+                    << ColumnFilter.new([page, group[1], title[1]],
                                         [[title[0] + ' stddev', col + '_stddev']])
             end
             tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
