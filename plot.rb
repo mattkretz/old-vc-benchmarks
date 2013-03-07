@@ -27,6 +27,9 @@ class LabelTranslation #{{{
     end
 
     def translate(str)
+        if str.is_a?(Array)
+            return str.map { |x| translate(x) }.join(', ')
+        end
         if str =~ /^".*"$/
             tmp = @trans[str[1..-2]]
             return "\"#{tmp}\"" if tmp
@@ -524,12 +527,11 @@ EOF
 
     groupNames = parser.list(opt[:groupColumn])
     groupNames = [nil] if groupNames === nil
-    groupNames.map! { |x| [labelTranslation.translate(
-        x.is_a?(Array) ? x.map{ |y| labelTranslation.translate y}.join(', ') : x), x]}
+    groupNames.map! { |x| [labelTranslation.translate(x), x]}
     groupNames = sortOrder.sort groupNames if sort.include? :groups
 
     titleNames = parser.list(opt[:barColumns])
-    titleNames.map! { |x| [labelTranslation.translate(x.is_a?(Array) ? x.join(', ') : x), x]}
+    titleNames.map! { |x| [labelTranslation.translate(x), x]}
     titleNames = sortOrder.sort titleNames if sort.include? :bars
 
     clusterNames = parser.list(opt[:clusterColumns])
