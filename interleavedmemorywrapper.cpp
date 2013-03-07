@@ -137,7 +137,7 @@ template<typename V> class Runner
                 for (int k = 1; k < COUNT; ++k) {
                     sum += x[k] * x[k];
                 }
-                const V factor = std::sqrt(sum);
+                const V factor = V::One() / std::sqrt(sum);
                 for (int k = 0; k < COUNT; ++k) {
                     x[k] *= factor;
                 }
@@ -145,6 +145,25 @@ template<typename V> class Runner
                     for (int k = 0; k < COUNT; ++k) {
                         data[i + j].x[k] = x[k][j];
                     }
+                }
+            }
+        }
+        benchmark_loop(Benchmark("normalize vectors (baseline)", MemorySize * sizeof(TestStruct), "Byte")) {
+            for (size_t i = 0; i < MemorySize; i += V::Size) {
+                V x[COUNT];
+                for (int k = 0; k < COUNT; ++k) {
+                    x[k] = SomeData<V>::x[k];
+                }
+                V sum = x[0] * x[0];
+                for (int k = 1; k < COUNT; ++k) {
+                    sum += x[k] * x[k];
+                }
+                const V factor = V::One() / std::sqrt(sum);
+                for (int k = 0; k < COUNT; ++k) {
+                    x[k] *= factor;
+                }
+                for (int k = 0; k < COUNT; ++k) {
+                    keepResults(x[k]);
                 }
             }
         }
