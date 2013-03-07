@@ -153,6 +153,9 @@ template<typename V> class Runner
                 V x[COUNT];
                 for (int k = 0; k < COUNT; ++k) {
                     x[k] = SomeData<V>::x[k];
+                    keepResultsDirty(x[k]); // important: otherwise the compiler will use common
+                    // subexpression elimination to pull the first three loops out of the
+                    // surrounding loop
                 }
                 V sum = x[0] * x[0];
                 for (int k = 1; k < COUNT; ++k) {
