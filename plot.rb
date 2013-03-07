@@ -10,6 +10,10 @@ gnuplotOptions = {# {{{
 class LabelTranslation #{{{
     def initialize(trans = Hash.new)
         @trans = {
+            'half L1' => '⅟₂ L1',
+            'half L2' => '⅟₂ L2',
+            'half L3' => '⅟₂ L3',
+            '4x L3' => '4×L3',
             '-nan' => '0',
             'nan' => '0',
             'sse' => 'SSE',
@@ -83,11 +87,7 @@ benchmarks = {
             'r/w' => 'load \\& store',
             'aligned' => 'Aligned',
             'aligned mem/unaligned instr' => 'Aligned Memory, Unaligned Instruction',
-            'unaligned' => 'Unaligned',
-            'half L1' => '⅟₂ L1',
-            'half L2' => '⅟₂ L2',
-            'half L3' => '⅟₂ L3',
-            '4x L3' => '4×L3'
+            'unaligned' => 'Unaligned'
         )
     },
     'arithmetics' => { #{{{1
