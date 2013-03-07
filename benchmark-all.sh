@@ -46,7 +46,8 @@ machine		: `uname -m`
 `grep -m1 -B2 'model name' /proc/cpuinfo`
 EOF
 
-# examine the CPU topology, we'd like to run benchmarks on all cores, but keep thread siblings idle (i.e. Intel Hyperthreading or AMD Modules)
+# examine the CPU topology, we'd like to run benchmarks on all cores, but keep thread siblings idle
+# (i.e. Intel Hyperthreading or AMD Modules)
 blockedIds=()
 usableCores=()
 for cpu in `find /sys/devices/system/cpu -name "cpu[0-9]*"`; do
@@ -68,6 +69,11 @@ for cpu in `find /sys/devices/system/cpu -name "cpu[0-9]*"`; do
     fi
   fi
 done
+
+# One core (and its sibling) must stay idle for the OS (and shell). Removing the first usable core
+# from the list:
+usableCores=(${usableCores[2,-1]})
+
 idleCores=(${usableCores[@]})
 
 echo "The following cores will be used for parallel execution of the benchmarks: ${idleCores[@]}"
