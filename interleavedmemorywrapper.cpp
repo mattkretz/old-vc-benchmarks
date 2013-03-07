@@ -47,11 +47,11 @@ template<typename V, typename T, typename I> struct DeinterleaveHelper<8, V, T, 
 template<int Count, typename V, typename T, typename I> static void deinterleave(const T &wrapper, const I &i) { DeinterleaveHelper<Count, V, T, I>::impl(wrapper, i); }
 
 template<typename V> struct SomeData { static V x[8]; };
-template<> float_v SomeData<float_v>::x[8] = {};
-template<> sfloat_v SomeData<sfloat_v>::x[8] = {};
-template<> double_v SomeData<double_v>::x[8] = {};
-template<> int_v SomeData<int_v>::x[8] = {};
-template<> short_v SomeData<short_v>::x[8] = {};
+template<> float_v SomeData<float_v>::x[8] = { float_v::One() };
+template<> sfloat_v SomeData<sfloat_v>::x[8] = { sfloat_v::One() };
+template<> double_v SomeData<double_v>::x[8] = { double_v::One() };
+template<> int_v SomeData<int_v>::x[8] = { int_v::One() };
+template<> short_v SomeData<short_v>::x[8] = { short_v::One() };
 
 template<int Count, typename V, typename T, typename I> struct InterleaveHelper;
 template<typename V, typename T, typename I> struct InterleaveHelper<2, V, T, I> { static void impl(T &wrapper, const I &i) { wrapper[i] = (SomeData<V>::x[0], SomeData<V>::x[1]); } };
