@@ -497,17 +497,17 @@ pdfs = Array.new
     end
     labelTranslation = opt[:labelTranslation] ? opt[:labelTranslation] : LabelTranslation.new
 
-    dp = DataParser.new(bench, labelTranslation)
-    next if dp.empty?
+    parser = DataParser.new(bench, labelTranslation)
+    next if parser.empty?
 
     sort = opt[:sort] ? opt[:sort] : Array.new
     key = opt[:key] ? opt[:key] : 'left top'
 
     col = opt[:dataColumn]
-    if dp.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
+    if parser.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
         col = $~[1] + '/' + $~[2] + 's'
     end
-    maxy = dp.maximumY col
+    maxy = parser.maximumY col
 
     pdffile = (opt[:outname] or bench) + (gnuplotOptions[:svg] ? '.svg' : '.pdf')
     pdfs << pdffile
@@ -518,22 +518,22 @@ set ylabel "#{opt[:ylabel] or opt[:dataColumn].sub /\//, ' / '}"
 set key #{key}
 EOF
 
-    pageNames = dp.list(opt[:pageColumn])
+    pageNames = parser.list(opt[:pageColumn])
     pageNames = [nil] if pageNames === nil
     pageNames = sortOrder.sort pageNames if sort.include? :pages
 
-    groupNames = dp.list(opt[:groupColumn])
+    groupNames = parser.list(opt[:groupColumn])
     groupNames = [nil] if groupNames === nil
     groupNames.map! { |x| [labelTranslation.translate(
         x.is_a?(Array) ? x.map{ |y| labelTranslation.translate y}.join(', ') : x), x]}
     groupNames = sortOrder.sort groupNames if sort.include? :groups
 
-    titleNames = dp.list(opt[:barColumns])
+    titleNames = parser.list(opt[:barColumns])
     titleNames.map! { |x| [labelTranslation.translate(x.is_a?(Array) ? x.join(', ') : x), x]}
     titleNames = sortOrder.sort titleNames if sort.include? :bars
 
-    clusterNames = dp.list(opt[:clusterColumns])
-    dp.sort opt[:clusterColumns], sortOrder if sort.include? :clusters
+    clusterNames = parser.list(opt[:clusterColumns])
+    parser.sort opt[:clusterColumns], sortOrder if sort.include? :clusters
 
     pageNames.each do |page|
         data = ''
@@ -548,7 +548,7 @@ EOF
                     << ColumnFilter.new([page, group[1], title[1]].flatten,
                                         [[title[0] + ' stddev', col + '_stddev']])
             end
-            tmp = dp.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
+            tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
             tmp = tmp[tmp.index("\n")+1..-1] if at > 0
             titleNames.size.times { data << tmp }
 
