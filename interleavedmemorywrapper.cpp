@@ -110,7 +110,7 @@ template<typename V> class Runner
                 deinterleave<COUNT, V>(wrapper, i);
             }
         }
-        benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
+        benchmark_loop(Benchmark("interleave (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
             for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
                 interleave<COUNT, V>(wrapper, i);
             }
