@@ -72,7 +72,7 @@ done
 
 # One core (and its sibling) must stay idle for the OS (and shell). Removing the first usable core
 # from the list:
-usableCores=(${usableCores[2,-1]})
+usableCores=(${usableCores[@]:1:${#usableCores[@]}})
 
 idleCores=(${usableCores[@]})
 
