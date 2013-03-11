@@ -10,6 +10,7 @@ gnuplotOptions = {# {{{
 class LabelTranslation #{{{
     def initialize(trans = Hash.new)
         @trans = {
+            'interleavedmemorywrapper' => 'InterleavedMemoryWrapper Benchmark',
             'memio' => 'Load/Store Benchmark',
             'arithmetics' => 'Arithmetic Operations Benchmark',
             'flops' => 'Peak Flop Benchmark',
@@ -83,6 +84,24 @@ class SortOrder #{{{1
     end
 end #}}}1
 benchmarks = {
+    'interleavedmemorywrapper' => { #{{{1
+        :key => 'right top',
+        :sort => [:groups, :bars, :clusters],
+        :pageColumn => ['datatype', 'MemorySize', 'Member Count'],
+        #:groupColumn => 'Member Count',
+        :barColumns => 'benchmark.name',
+        :clusterColumns => 'Implementation',
+        :dataColumn => 'Bytes/Cycle',
+        :labelTranslation => LabelTranslation.new(
+            '2' => '2 Entries',
+            '3' => '3 Entries',
+            '4' => '4 Entries',
+            '5' => '5 Entries',
+            '6' => '6 Entries',
+            '7' => '7 Entries',
+            '8' => '8 Entries'
+        )
+    },
     'memio' => { #{{{1
         :key => 'right top',
         :sort => [:groups, :bars, :clusters],
@@ -226,6 +245,15 @@ sortOrder = SortOrder.new([ #{{{1
     'AVX, XOP',
     'AVX, FMA4',
     'AVX, XOP, FMA4',
+
+    'deinterleave (index vector)',
+    'deinterleave (successive)',
+    'interleave (index vector)',
+    'interleave (successive)',
+    'normalize vectors (baseline)',
+    'normalize interleaved vectors (manually)',
+    'normalize interleaved vectors (index vector)',
+    'normalize interleaved vectors (successive)',
 
     'load',
     'store',
