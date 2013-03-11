@@ -568,10 +568,12 @@ EOF
             end
             at += clusterNames.size + 2.0 / (titleNames.size + 1)
         end
-        page = bench unless page
-        page = labelTranslation.translate(page)
+        pagetitle = labelTranslation.translate(bench)
+        if page
+            pagetitle += "\\n" + labelTranslation.translate(page)
+        end
         gnuplot.print <<EOF
-set title "#{page}"
+set title "#{pagetitle}"
 plot \
 #{gnuplot_print.join(", \\\n")}
 #{data}
