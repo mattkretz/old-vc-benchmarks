@@ -19,7 +19,11 @@
 
 #include "benchmark.h"
 #include <Vc/Vc>
+#ifdef HAVE_VC_SUPPORT_H
+#include <Vc/support.h>
+#else
 #include <common/support.h>
+#endif
 #include <map>
 #include <set>
 

@@ -49,6 +49,11 @@ if(_Vc_CMakeCache MATCHES "Vc_SOURCE_DIR:STATIC=([^\n]*)")
    set(Vc_DEFINITIONS)
    vc_set_preferred_compiler_flags()
 
+   find_file(VC_SUPPORT_H Vc/support.h PATHS "${Vc_SOURCE_DIR}/include" NO_DEFAULT_PATH)
+   if(VC_SUPPORT_H)
+      add_definitions(-DHAVE_VC_SUPPORT_H)
+   endif()
+
    message(STATUS "Vc at: ${Vc_BINARY_DIR} ${Vc_SOURCE_DIR} ${Vc_INCLUDE_DIR}")
    set(Vc_FOUND true)
 endif()
