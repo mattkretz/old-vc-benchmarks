@@ -8,9 +8,6 @@ project(Vc-Benchmarks)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(Vc REQUIRED)
-if(Vc_FOUND)
-   message(STATUS "Vc found at ${Vc_INSTALL_DIR}")
-endif()
 include_directories(${Vc_INCLUDE_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Vc_DEFINITIONS}")
 
