@@ -26,6 +26,16 @@ using Vc::double_v;
 using Vc::int_v;
 using Vc::short_v;
 
+namespace std
+{
+    int_v sqrt(int_v::AsArg x) {
+        return static_cast<int_v>(sqrt(static_cast<float_v>(x)));
+    }
+    short_v sqrt(short_v::AsArg x) {
+        return static_cast<short_v>(sqrt(static_cast<sfloat_v>(x)));
+    }
+} // namespace std
+
 template<int Count, typename V, typename T, typename I> struct NormalizeHelper;
 template<typename V, typename T, typename I> struct NormalizeHelper<2, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b;                   (a, b                  ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b                                    ); wrapper[i] = (a*factor, b*factor                                                            ); } };
 template<typename V, typename T, typename I> struct NormalizeHelper<3, V, T, I> { static void impl(T &wrapper, const I &i) { V a, b, c;                (a, b, c               ) = wrapper[i]; const V factor = V::One() / std::sqrt(a*a + b*b + c*c                              ); wrapper[i] = (a*factor, b*factor, c*factor                                                  ); } };
@@ -211,8 +221,8 @@ int bmain()
     Benchmark::setColumnData("datatype", "sfloat_v");
     Runner<sfloat_v>::run();
     Benchmark::setColumnData("datatype", "int_v");
-    //Runner<int_v>::run();
+    Runner<int_v>::run();
     Benchmark::setColumnData("datatype", "short_v");
-    //Runner<short_v>::run();
+    Runner<short_v>::run();
     return 0;
 }
