@@ -10,6 +10,16 @@ gnuplotOptions = {# {{{
 class LabelTranslation #{{{
     def initialize(trans = Hash.new)
         @trans = {
+            'memio' => 'Load/Store Benchmark',
+            'arithmetics' => 'Arithmetic Operations Benchmark',
+            'flops' => 'Peak Flop Benchmark',
+            'gather' => 'Gathers Benchmark',
+            'mask' => 'Masks Benchmark',
+            'compare' => 'Compares Benchmark',
+            'math' => 'Math Functions Benchmark',
+            'dhryrock' => 'Dhryrock Benchmark (Integer Vectors)',
+            'whetrock' => 'Whetrock Benchmark (Floating-Point Vectors)',
+
             'half L1' => '⅟₂ L1',
             'half L2' => '⅟₂ L2',
             'half L3' => '⅟₂ L3',
