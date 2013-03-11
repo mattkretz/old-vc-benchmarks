@@ -25,8 +25,10 @@ class LabelTranslation #{{{
             'half L2' => '⅟₂ L2',
             'half L3' => '⅟₂ L3',
             '4x L3' => '4×L3',
+
             '-nan' => '0',
             'nan' => '0',
+
             'sse' => 'SSE',
             'sse-mnoavx' => 'SSE (binary ops)',
             'sse-mavx' => 'SSE (ternary ops)',
