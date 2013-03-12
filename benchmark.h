@@ -217,10 +217,17 @@ extern const char *printHelp2;
             VC_IS_LIKELY(_bm_obj_local.wantsMoreDataPoints() && _bm_obj_local.Start()) || VC_IS_UNLIKELY(_bm_obj_local.Print()); \
             _bm_obj_local.Stop())
 
+template<int S> struct KeepResultsType;
+template<> struct KeepResultsType<1> { typedef   char Type; };
+template<> struct KeepResultsType<2> { typedef  short Type; };
+template<> struct KeepResultsType<4> { typedef    int Type; };
+template<> struct KeepResultsType<8> { typedef double Type; };
+
 template<typename T, int S> struct KeepResultsHelper {
+    typedef typename KeepResultsType<S>::Type ST;
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+r"(tmp0));
+        asm volatile("":"+r"(reinterpret_cast<ST &>(tmp0)));
 #else
         blackHole[0] = tmp0;
 #endif

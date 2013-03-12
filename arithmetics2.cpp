@@ -29,178 +29,110 @@ using namespace Vc;
 template<typename Vector> struct Arithmetics
 {
     typedef typename Vector::EntryType Scalar;
+    typedef typename Vector::AsArg AsArg;
+    enum { Repetitions = 1024*1024 };
+
+    static Vc_ALWAYS_INLINE Vector add(AsArg a, AsArg b) { return a + b; }
+    static Vc_ALWAYS_INLINE Vector sub(AsArg a, AsArg b) { return a - b; }
+    static Vc_ALWAYS_INLINE Vector mul(AsArg a, AsArg b) { return a * b; }
+    static Vc_ALWAYS_INLINE Vector div(AsArg a, AsArg b) { return a / b; }
+
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl1(const char *name, Op op)
+    {
+        const Vector arg0 = Vector::Random();
+        Vector arg1 = Vector::Random();
+        benchmark_loop(Benchmark(name, Vector::Size * Repetitions, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                Vector x0 = op(arg0, arg1);
+                keepResultsDirty(arg1);
+                keepResults(x0);
+            }
+        }
+    }
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl2(const char *name, Op op)
+    {
+        const Vector arg0 = Vector::Random();
+        Vector arg1 = Vector::Random();
+        Vector arg2 = Vector::Random();
+        benchmark_loop(Benchmark(name, 2 * Vector::Size * Repetitions, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                Vector x0 = op(arg0, arg1);
+                keepResultsDirty(arg1);
+                Vector x1 = op(arg0, arg2);
+                keepResultsDirty(arg2);
+                keepResults(x0, x1);
+            }
+        }
+    }
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl4(const char *name, Op op)
+    {
+        const Vector arg0 = Vector::Random();
+        Vector arg1 = Vector::Random();
+        Vector arg2 = Vector::Random();
+        Vector arg3 = Vector::Random();
+        Vector arg4 = Vector::Random();
+        benchmark_loop(Benchmark(name, 4 * Vector::Size * Repetitions, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                Vector x0 = op(arg0, arg1);
+                keepResultsDirty(arg1);
+                Vector x1 = op(arg0, arg2);
+                keepResultsDirty(arg2);
+                Vector x2 = op(arg0, arg3);
+                keepResultsDirty(arg3);
+                Vector x3 = op(arg0, arg4);
+                keepResultsDirty(arg4);
+                keepResults(x0, x1, x2, x3);
+            }
+        }
+    }
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl8(const char *name, Op op)
+    {
+        const Vector arg0 = Vector::Random();
+        Vector arg1 = Vector::Random();
+        Vector arg2 = Vector::Random();
+        Vector arg3 = Vector::Random();
+        Vector arg4 = Vector::Random();
+        Vector arg5 = Vector::Random();
+        Vector arg6 = Vector::Random();
+        Vector arg7 = Vector::Random();
+        Vector arg8 = Vector::Random();
+        benchmark_loop(Benchmark(name, 8 * Vector::Size * Repetitions, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                Vector x0 = op(arg0, arg1); keepResultsDirty(arg1);
+                Vector x1 = op(arg0, arg2); keepResultsDirty(arg2);
+                Vector x2 = op(arg0, arg3); keepResultsDirty(arg3);
+                Vector x3 = op(arg0, arg4); keepResultsDirty(arg4);
+                Vector x4 = op(arg0, arg5); keepResultsDirty(arg5);
+                Vector x5 = op(arg0, arg6); keepResultsDirty(arg6);
+                Vector x6 = op(arg0, arg7); keepResultsDirty(arg7);
+                Vector x7 = op(arg0, arg8); keepResultsDirty(arg8);
+                keepResults(x0, x1, x2, x3, x4, x5, x6, x7);
+            }
+        }
+    }
 
     static void run()
     {
-        const int Factor = CpuId::L1Data() / sizeof(Vector);
-
-        const double valuesPerSecondFactor = Factor * Vector::Size;
-
-        Vector *data = new Vector[Factor + 1];
-#ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(data, (Factor + 1) * sizeof(Vector));
-#endif
-        for (int i = 0; i < Factor + 1; ++i) {
-            data[i] = Vector::Random();
-            data[i](data[i] == Vector(Zero)) += Vector(One);
-        }
-        const Vector arg0 = Vector::Random();
-
         Benchmark::setColumnData("unrolling", "not unrolled");
-        const Vector *VC_RESTRICT const end = &data[Factor];
-        benchmark_loop(Benchmark("add", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ++ptr) {
-                Vector tmp = arg0 + ptr[1];
-                Vc::forceToRegisters(tmp);
-            }
-        }
-        benchmark_loop(Benchmark("sub", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ++ptr) {
-                Vector tmp = arg0 - ptr[1];
-                Vc::forceToRegisters(tmp);
-            }
-        }
-        benchmark_loop(Benchmark("mul", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ++ptr) {
-                Vector tmp = arg0 * ptr[1];
-                Vc::forceToRegisters(tmp);
-            }
-        }
-        benchmark_loop(Benchmark("div", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ++ptr) {
-                Vector tmp = arg0 / ptr[1];
-                Vc::forceToRegisters(tmp);
-            }
-        }
-
+        runImpl1("add", add);
+        runImpl1("sub", sub);
+        runImpl1("mul", mul);
+        runImpl1("div", div);
         Benchmark::setColumnData("unrolling", "2x unrolled");
-        benchmark_loop(Benchmark("add", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 2) {
-                Vector tmp0 = arg0 + ptr[1];
-                Vector tmp1 = arg0 + ptr[2];
-                keepResults(tmp0, tmp1);
-            }
-        }
-        benchmark_loop(Benchmark("sub", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 2) {
-                Vector tmp0 = arg0 - ptr[1];
-                Vector tmp1 = arg0 - ptr[2];
-                keepResults(tmp0, tmp1);
-            }
-        }
-        benchmark_loop(Benchmark("mul", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 2) {
-                Vector tmp0 = arg0 * ptr[1];
-                Vector tmp1 = arg0 * ptr[2];
-                keepResults(tmp0, tmp1);
-            }
-        }
-        benchmark_loop(Benchmark("div", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 2) {
-                Vector tmp0 = arg0 / ptr[1];
-                Vector tmp1 = arg0 / ptr[2];
-                keepResults(tmp0, tmp1);
-            }
-        }
-
+        runImpl2("add", add);
+        runImpl2("sub", sub);
+        runImpl2("mul", mul);
+        runImpl2("div", div);
         Benchmark::setColumnData("unrolling", "4x unrolled");
-        benchmark_loop(Benchmark("add", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 4) {
-                Vector tmp0 = arg0 + ptr[1];
-                Vector tmp1 = arg0 + ptr[2];
-                Vector tmp2 = arg0 + ptr[3];
-                Vector tmp3 = arg0 + ptr[4];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-            }
-        }
-        benchmark_loop(Benchmark("sub", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 4) {
-                Vector tmp0 = arg0 - ptr[1];
-                Vector tmp1 = arg0 - ptr[2];
-                Vector tmp2 = arg0 - ptr[3];
-                Vector tmp3 = arg0 - ptr[4];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-            }
-        }
-        benchmark_loop(Benchmark("mul", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 4) {
-                Vector tmp0 = arg0 * ptr[1];
-                Vector tmp1 = arg0 * ptr[2];
-                Vector tmp2 = arg0 * ptr[3];
-                Vector tmp3 = arg0 * ptr[4];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-            }
-        }
-        benchmark_loop(Benchmark("div", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 4) {
-                Vector tmp0 = arg0 / ptr[1];
-                Vector tmp1 = arg0 / ptr[2];
-                Vector tmp2 = arg0 / ptr[3];
-                Vector tmp3 = arg0 / ptr[4];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-            }
-        }
-
+        runImpl4("add", add);
+        runImpl4("sub", sub);
+        runImpl4("mul", mul);
+        runImpl4("div", div);
         Benchmark::setColumnData("unrolling", "8x unrolled");
-        benchmark_loop(Benchmark("add", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 8) {
-                Vector tmp0 = arg0 + ptr[1];
-                Vector tmp1 = arg0 + ptr[2];
-                Vector tmp2 = arg0 + ptr[3];
-                Vector tmp3 = arg0 + ptr[4];
-                Vector tmp4 = arg0 + ptr[5];
-                Vector tmp5 = arg0 + ptr[6];
-                Vector tmp6 = arg0 + ptr[7];
-                Vector tmp7 = arg0 + ptr[8];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-                keepResults(tmp4, tmp5, tmp6, tmp7);
-            }
-        }
-        benchmark_loop(Benchmark("sub", valuesPerSecondFactor, "Op")) {
-            for (const Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 8) {
-                Vector tmp0 = arg0 - ptr[1];
-                Vector tmp1 = arg0 - ptr[2];
-                Vector tmp2 = arg0 - ptr[3];
-                Vector tmp3 = arg0 - ptr[4];
-                Vector tmp4 = arg0 - ptr[5];
-                Vector tmp5 = arg0 - ptr[6];
-                Vector tmp6 = arg0 - ptr[7];
-                Vector tmp7 = arg0 - ptr[8];
-                keepResults(tmp0, tmp1, tmp2, tmp3);
-                keepResults(tmp4, tmp5, tmp6, tmp7);
-            }
-        }
-        benchmark_loop(Benchmark("mul", valuesPerSecondFactor, "Op")) {
-            Vector *VC_RESTRICT ptr = &data[0];
-            for (int i = 0; i < Factor; i += 8) {
-                ptr[0] *= arg0;
-                ptr[1] *= arg0;
-                ptr[2] *= arg0;
-                ptr[3] *= arg0;
-                ptr[4] *= arg0;
-                ptr[5] *= arg0;
-                ptr[6] *= arg0;
-                ptr[7] *= arg0;
-                keepResults(ptr[0], ptr[1], ptr[2], ptr[3]);
-                keepResults(ptr[4], ptr[5], ptr[6], ptr[7]);
-            }
-        }
-        benchmark_loop(Benchmark("div", valuesPerSecondFactor, "Op")) {
-            for (Vector *VC_RESTRICT ptr = &data[0]; ptr < end; ptr += 1) {
-                ptr[0] /= arg0;
-                ptr[1] /= arg0;
-                ptr[2] /= arg0;
-                ptr[3] /= arg0;
-                ptr[4] /= arg0;
-                ptr[5] /= arg0;
-                ptr[6] /= arg0;
-                ptr[7] /= arg0;
-                keepResults(ptr[0], ptr[1], ptr[2], ptr[3]);
-                keepResults(ptr[4], ptr[5], ptr[6], ptr[7]);
-            }
-        }
-
-        delete[] data;
+        runImpl8("add", add);
+        runImpl8("sub", sub);
+        runImpl8("mul", mul);
+        runImpl8("div", div);
     }
 };
 
