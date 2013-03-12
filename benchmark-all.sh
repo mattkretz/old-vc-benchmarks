@@ -117,7 +117,7 @@ if which benchmarking.sh >/dev/null; then
 fi
 
 for bench in \
-  interleavedmemorywrapper flops arithmetics gather mask compare math memio dhryrock whetrock mandelbrotbench
+  interleavedmemorywrapper flops arithmetics arithmetics2 gather mask compare math memio dhryrock whetrock mandelbrotbench
 do
   executeBench $bench scalar
   $haveSse && executeBench $bench sse
