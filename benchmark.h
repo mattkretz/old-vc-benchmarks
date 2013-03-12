@@ -59,6 +59,9 @@
 #define Vc_ALWAYS_INLINE_L inline ALWAYS_INLINE_L
 #define Vc_ALWAYS_INLINE_R ALWAYS_INLINE_R
 #endif
+#ifndef Vc_INTRINSIC
+#define Vc_INTRINSIC Vc_ALWAYS_INLINE
+#endif
 
 class Benchmark
 {
@@ -215,7 +218,7 @@ extern const char *printHelp2;
             _bm_obj_local.Stop())
 
 template<typename T, int S> struct KeepResultsHelper {
-    static inline void keepDirty(T &tmp0) {
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+r"(tmp0));
 #else
@@ -267,7 +270,7 @@ static inline __attribute__((always_inline)) void _keepXRegister(T x0, T x1, T x
 
 #if defined(VC_IMPL_AVX)
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
-    static inline void keepDirty(Vc::Vector<T> &tmp0) {
+    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+x"(tmp0.data()));
 #else
@@ -293,7 +296,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
 #endif
 };
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
-    static inline void keepDirty(Vc::Vector<T> &tmp0) {
+    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+x"(tmp0.data()));
 #else
@@ -339,7 +342,7 @@ template<unsigned int S1, size_t S2, int S3> struct KeepResultsHelper<Vc::AVX::M
 };
 #elif defined(VC_IMPL_SSE)
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
-    static inline void keepDirty(Vc::Vector<T> &tmp0) {
+    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+x"(tmp0.data()));
 #else
@@ -365,7 +368,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
 #endif
 };
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
-    static inline void keepDirty(Vc::Vector<T> &tmp0) {
+    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+x"(tmp0.data()[0]), "+x"(tmp0.data()[1]));
 #else
@@ -392,7 +395,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
 #endif
 };
 template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
-    static inline void keepDirty(Vc::SSE::Mask<S> &tmp0) {
+    static Vc_INTRINSIC void keepDirty(Vc::SSE::Mask<S> &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+x"(tmp0.data()));
 #else
@@ -439,7 +442,7 @@ template<> struct KeepResultsHelper<Vc::SSE::Float8Mask, 32> {
 };
 #endif
 
-template<typename T> static inline void keepResultsDirty(T &tmp0)
+template<typename T> static Vc_INTRINSIC void keepResultsDirty(T &tmp0)
 {
     KeepResultsHelper<T, sizeof(T)>::keepDirty(tmp0);
 }
