@@ -74,7 +74,7 @@ endmacro(vc_generate_plots)
 macro(vc_add_benchmark name)
    set(LIBS cpuset)
    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-      set(LIBS ${LIBS} rt)
+      set(LIBS ${LIBS} rt -pthread)
    endif()
 
    set(variants)
