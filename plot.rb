@@ -13,6 +13,7 @@ class LabelTranslation #{{{
             'interleavedmemorywrapper' => 'InterleavedMemoryWrapper Benchmark',
             'memio' => 'Load/Store Benchmark',
             'arithmetics' => 'Arithmetic Operations Benchmark',
+            'arithmetics2' => 'Arithmetic Operations Benchmark (without loads/stores)',
             'flops' => 'Peak Flop Benchmark',
             'gather' => 'Gathers Benchmark',
             'mask' => 'Masks Benchmark',
@@ -122,6 +123,18 @@ benchmarks = {
         )
     },
     'arithmetics' => { #{{{1
+        :sort => [:pages, :bars],
+        :pageColumn => 'datatype',
+        :groupColumn => 'unrolling',
+        :barColumns => 'Implementation',
+        :clusterColumns => 'benchmark.name',
+        :dataColumn => 'Ops/Cycle',
+        :labelTranslation => LabelTranslation.new(
+            'arithmetics' => 'Arithmetic Operations'
+        ),
+        :ylabel => 'Operations / Cycle'
+    },
+    'arithmetics2' => { #{{{1
         :sort => [:pages, :bars],
         :pageColumn => 'datatype',
         :groupColumn => 'unrolling',
