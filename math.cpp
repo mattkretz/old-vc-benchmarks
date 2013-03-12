@@ -30,70 +30,46 @@ template<typename Vector> struct Helper
     typedef typename Vector::Mask Mask;
     typedef typename Vector::EntryType Scalar;
 
-    const int NVectors;
-    const int opPerSecondFactor;
-    Vector *data;
-
-    Helper()/*{{{*/
-        : NVectors(CpuId::L1Data() / (2 * sizeof(Vector))),
-        opPerSecondFactor(NVectors * Vector::Size),
-        data(new Vector[NVectors])
-    {
-#ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(data, NVectors * sizeof(Vector));
-#endif
-        for (int i = 0; i < NVectors; ++i) {
-            data[i] = Vector::Random();
-        }
-    }
-
-    ~Helper()
-    {
-        delete[] data;
-    }/*}}}*/
+    enum {
+        Repetitions = 1024 * 1024,
+        opPerSecondFactor = Repetitions * Vector::Size
+    };
 
     Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(const Vector &, const Vector &))/*{{{*/
     {
-        Benchmark timer(name, opPerSecondFactor, "Op");
-        while (timer.wantsMoreDataPoints()) {
-            timer.Start();
-            for (int i = 0; i < NVectors - 1; ++i) {
-                Vector tmp = fun(data[i], data[i + 1]);
-                Vc::forceToRegisters(tmp);
+        Vector a = Vector::Random();
+        Vector b = Vector::Random();
+        benchmark_loop(Benchmark(name, opPerSecondFactor, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+x"(a), "+x"(b));
+                Vector tmp = fun(a, b);
+                keepResults(tmp);
             }
-            Vector tmp = fun(data[NVectors - 1], data[0]);
-            Vc::forceToRegisters(tmp);
-            timer.Stop();
         }
-        timer.Print();
     }
 
     Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(const Vector &))
     {
-        Benchmark timer(name, opPerSecondFactor, "Op");
-        while (timer.wantsMoreDataPoints()) {
-            timer.Start();
-            for (int i = 0; i < NVectors; ++i) {
-                Vector tmp = fun(data[i]);
-                Vc::forceToRegisters(tmp);
+        Vector a = Vector::Random();
+        benchmark_loop(Benchmark(name, opPerSecondFactor, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(a));
+                Vector tmp = fun(a);
+                keepResults(tmp);
             }
-            timer.Stop();
         }
-        timer.Print();
     }
 
     Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(Vector))
     {
-        Benchmark timer(name, opPerSecondFactor, "Op");
-        while (timer.wantsMoreDataPoints()) {
-            timer.Start();
-            for (int i = 0; i < NVectors; ++i) {
-                Vector tmp = fun(data[i]);
-                Vc::forceToRegisters(tmp);
+        Vector a = Vector::Random();
+        benchmark_loop(Benchmark(name, opPerSecondFactor, "Op")) {
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+x"(a));
+                Vector tmp = fun(a);
+                keepResults(tmp);
             }
-            timer.Stop();
         }
-        timer.Print();
     }/*}}}*/
 
     void run()/*{{{*/
