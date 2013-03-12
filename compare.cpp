@@ -19,7 +19,6 @@
 
 #include <Vc/Vc>
 #include "benchmark.h"
-#include "random.h"
 #include <Vc/cpuid.h>
 #include <cstdio>
 #include <cstdlib>
@@ -49,7 +48,7 @@ template<typename Vector> class DoCompares
             mlock(a, (Factor + 3) * sizeof(Vector));
 #endif
             for (int i = 0; i < Factor + 3; ++i) {
-                a[i] = PseudoRandom<Vector>::next();
+                a[i] = Vector::Random();
             }
 
             typedef typename Vector::Mask M;
