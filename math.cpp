@@ -52,7 +52,7 @@ template<typename Vector> struct Helper
         delete[] data;
     }/*}}}*/
 
-    void benchmarkFunction(const char *name, Vector (*fun)(const Vector &, const Vector &))/*{{{*/
+    Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(const Vector &, const Vector &))/*{{{*/
     {
         Benchmark timer(name, opPerSecondFactor, "Op");
         while (timer.wantsMoreDataPoints()) {
@@ -68,7 +68,7 @@ template<typename Vector> struct Helper
         timer.Print();
     }
 
-    void benchmarkFunction(const char *name, Vector (*fun)(const Vector &))
+    Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(const Vector &))
     {
         Benchmark timer(name, opPerSecondFactor, "Op");
         while (timer.wantsMoreDataPoints()) {
@@ -82,7 +82,7 @@ template<typename Vector> struct Helper
         timer.Print();
     }
 
-    void benchmarkFunction(const char *name, Vector (*fun)(Vector))
+    Vc_ALWAYS_INLINE void benchmarkFunction(const char *name, Vector (*fun)(Vector))
     {
         Benchmark timer(name, opPerSecondFactor, "Op");
         while (timer.wantsMoreDataPoints()) {
