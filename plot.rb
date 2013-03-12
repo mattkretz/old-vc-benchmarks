@@ -3,7 +3,7 @@
 
 argv = ARGV
 gnuplotOptions = {# {{{
-    :font => 'CM Sans,5',
+    :font => 'CM Sans,8',
     :size => '19.55cm,11cm',
     :svg => false
 }# }}}
