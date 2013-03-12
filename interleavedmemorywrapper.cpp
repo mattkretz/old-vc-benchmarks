@@ -89,7 +89,9 @@ template<typename V> class Runner
         T x[Count];
     };
 
-    template<int COUNT> static void runImpl(size_t MemorySize)
+    enum { Repetitions = 1024 * 1024 };
+
+    template<int COUNT> static void runImpl()
     {
         std::ostringstream str;
         str << COUNT;
@@ -97,50 +99,69 @@ template<typename V> class Runner
         typedef TestStruct_<COUNT> TestStruct;
         typedef std::vector<TestStruct> TestData;
 
-        MemorySize /= sizeof(TestStruct);
-        MemorySize &= ~(V::Size - 1);
-        TestData data(MemorySize);
+        TestData data(1024);
 #ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(&data[0], MemorySize * sizeof(TestStruct));
+        mlock(&data[0], 1024 * sizeof(TestStruct));
 #endif
 
         Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
-        benchmark_loop(Benchmark("deinterleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (size_t i = 0; i < MemorySize; i += V::Size) {
-                deinterleave<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("deinterleave (successive)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                deinterleave<COUNT, V>(wrapper, 0);
             }
         }
-        benchmark_loop(Benchmark("interleave (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (size_t i = 0; i < MemorySize; i += V::Size) {
-                interleave<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("interleave (successive)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                interleave<COUNT, V>(wrapper, 0);
             }
         }
-        benchmark_loop(Benchmark("deinterleave (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
-                deinterleave<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("deinterleave (index vector)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                deinterleave<COUNT, V>(wrapper, I::IndexesFromZero());
             }
         }
-        benchmark_loop(Benchmark("interleave (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
-                interleave<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("interleave (index vector)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                interleave<COUNT, V>(wrapper, I::IndexesFromZero());
             }
         }
-        benchmark_loop(Benchmark("normalize interleaved vectors (successive)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (size_t i = 0; i < MemorySize; i += V::Size) {
-                normalize<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("normalize interleaved vectors (successive)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                normalize<COUNT, V>(wrapper, 0);
             }
         }
-        benchmark_loop(Benchmark("normalize interleaved vectors (index vector)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (I i = I::IndexesFromZero(); i < MemorySize; i += V::Size) {
-                normalize<COUNT, V>(wrapper, i);
+        benchmark_loop(Benchmark("normalize interleaved vectors (index vector)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
+                normalize<COUNT, V>(wrapper, I::IndexesFromZero());
             }
         }
-        benchmark_loop(Benchmark("normalize interleaved vectors (manually)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (size_t i = 0; i < MemorySize; i += V::Size) {
+        benchmark_loop(Benchmark("normalize interleaved vectors (manually)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int j = 0; j < V::Size; ++j) {
+                    asm("":"+m"(data[j]));
+                }
                 V x[COUNT];
                 for (int j = 0; j < V::Size; ++j) {
                     for (int k = 0; k < COUNT; ++k) {
-                        x[k][j] = data[i + j].x[k];
+                        x[k][j] = data[0 + j].x[k];
                     }
                 }
                 V sum = x[0] * x[0];
@@ -153,19 +174,21 @@ template<typename V> class Runner
                 }
                 for (int j = 0; j < V::Size; ++j) {
                     for (int k = 0; k < COUNT; ++k) {
-                        data[i + j].x[k] = x[k][j];
+                        data[0 + j].x[k] = x[k][j];
                     }
                 }
             }
         }
-        benchmark_loop(Benchmark("normalize vectors (baseline)", MemorySize * sizeof(TestStruct), "Byte")) {
-            for (size_t i = 0; i < MemorySize; i += V::Size) {
+        benchmark_loop(Benchmark("normalize vectors (baseline)", Repetitions * sizeof(TestStruct), "Byte")) {
+            for (int i = 0; i < Repetitions; i += V::Size) {
+                for (int k = 0; k < COUNT; ++k) {
+                    asm("":"+m"(SomeData<V>::x[k])); // important: otherwise the compiler will use common
+                    // subexpression elimination to pull the first three loops out of the
+                    // surrounding loop
+                }
                 V x[COUNT];
                 for (int k = 0; k < COUNT; ++k) {
                     x[k] = SomeData<V>::x[k];
-                    keepResultsDirty(x[k]); // important: otherwise the compiler will use common
-                    // subexpression elimination to pull the first three loops out of the
-                    // surrounding loop
                 }
                 V sum = x[0] * x[0];
                 for (int k = 1; k < COUNT; ++k) {
@@ -182,35 +205,21 @@ template<typename V> class Runner
         }
     }
 
-    static void run(size_t MemorySize)
-    {
-        runImpl<2>(MemorySize);
-        runImpl<3>(MemorySize);
-        runImpl<4>(MemorySize);
-        runImpl<5>(MemorySize);
-        runImpl<6>(MemorySize);
-        runImpl<7>(MemorySize);
-        runImpl<8>(MemorySize);
-    }
-
 public:
     static void run()
     {
-        using Vc::CpuId;
-        Benchmark::setColumnData("MemorySize", "half L1");
-        run(CpuId::L1Data() / 2);
-        Benchmark::setColumnData("MemorySize", "L1");
-        run(CpuId::L1Data());
-        Benchmark::setColumnData("MemorySize", "half L2");
-        run(CpuId::L2Data() / 2);
-        Benchmark::setColumnData("MemorySize", "L2");
-        run(CpuId::L2Data());
+        runImpl<2>();
+        runImpl<3>();
+        runImpl<4>();
+        runImpl<5>();
+        runImpl<6>();
+        runImpl<7>();
+        runImpl<8>();
     }
 };
 
 int bmain()
 {
-    Benchmark::addColumn("MemorySize");
     Benchmark::addColumn("datatype");
     Benchmark::addColumn("Member Count");
 
