@@ -41,7 +41,8 @@ template<typename Vector> struct Helper
         Vector b = Vector::Random();
         benchmark_loop(Benchmark(name, opPerSecondFactor, "Op")) {
             for (int i = 0; i < Repetitions; ++i) {
-                asm("":"+x"(a), "+x"(b));
+                keepResultsDirty(a);
+                keepResultsDirty(b);
                 Vector tmp = fun(a, b);
                 keepResults(tmp);
             }
@@ -65,7 +66,7 @@ template<typename Vector> struct Helper
         Vector a = Vector::Random();
         benchmark_loop(Benchmark(name, opPerSecondFactor, "Op")) {
             for (int i = 0; i < Repetitions; ++i) {
-                asm("":"+x"(a));
+                keepResultsDirty(a);
                 Vector tmp = fun(a);
                 keepResults(tmp);
             }
