@@ -48,10 +48,6 @@
 
 #include "tsc.h"
 
-#if !defined(WIN32) && !defined(__APPLE__)
-//#define VC_USE_CPU_TIME
-#endif
-
 #include <common/macros.h>
 
 #ifdef ALWAYS_INLINE
@@ -121,7 +117,9 @@ private:
     uint64_t fRealTime;
 #else
     struct timespec fRealTime;
+#ifdef VC_USE_CPU_TIME
     struct timespec fCpuTime;
+#endif
 #endif
     double m_mean[3];
     double m_stddev[3];
@@ -144,7 +142,9 @@ Vc_ALWAYS_INLINE bool Benchmark::Start()
     fRealTime = mach_absolute_time();
 #else
     clock_gettime( CLOCK_MONOTONIC, &fRealTime );
+#ifdef VC_USE_CPU_TIME
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &fCpuTime );
+#endif
 #endif
     fTsc.Start();
     return true;
@@ -181,7 +181,7 @@ Vc_ALWAYS_INLINE void Benchmark::Stop()
 #ifdef VC_USE_CPU_TIME
     struct timespec cpu;
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &cpu );
-    const double elapsedCpuTime = convertTimeSpec(cpu ) - convertTimeSpec(fCpuTime );
+    const double elapsedCpuTime = convertTimeSpec(cpu ) - convertTimeSpec(fCpuTime);
     m_mean[2] += elapsedCpuTime;
     m_stddev[2] += elapsedCpuTime * elapsedCpuTime;
 #endif

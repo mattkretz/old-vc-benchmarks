@@ -172,6 +172,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
          COMMENT "Making the rtwrapper suid root"
          )
    endif(REALTIME_BENCHMARKS)
+
+   set(LOG_CPUTIME FALSE CACHE BOOL "Enable additional logging of the CPU time. This adds little information and makes time keeping more costly and less accurate.")
+   if(LOG_CPUTIME)
+      add_definitions(-DVC_USE_CPU_TIME)
+   endif()
 endif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 if(EXISTS "${Vc_SOURCE_DIR}/common/interleavedmemory.h")
