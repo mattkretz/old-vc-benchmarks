@@ -88,7 +88,6 @@ template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHe
             m_data[0] = _data;
             im = tmp;
 
-            //static_cast<GatherImpl *>(this)->run();
             while (timer.wantsMoreDataPoints()) {
                 timer.Start();
                 static_cast<const GatherImpl *>(this)->run();
@@ -104,11 +103,8 @@ template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHe
         }
 
     protected:
-        inline const Scalar *data(int i) const {
-            //if (sizeof(typename IndexVector::EntryType) == 2) {
-                return m_data[i];
-            //}
-            //return m_data[0];
+        inline const Scalar *data(int i = 0) const {
+            return m_data[i];
         }
         Benchmark timer;
         const int indexesCount;
