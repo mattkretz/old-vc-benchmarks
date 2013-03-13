@@ -67,7 +67,7 @@ static void doBlah()
         v.scatter(data, i2, mask);
     }
 #ifdef __GNUC__
-    asm volatile(""::"r"(&data[0]));
+    asm volatile(""::"m"(data[0]));
 #endif
     blackHolePtr = mem.v;
 }
