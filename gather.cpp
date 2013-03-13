@@ -74,14 +74,14 @@ enum {
 
 template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHelper<Vector>
 {
-	public:
-		typedef typename Vector::IndexType IndexVector;
-		typedef typename Vector::Mask IndexMask;
-		typedef typename Vector::EntryType Scalar;
+    public:
+        typedef typename Vector::IndexType IndexVector;
+        typedef typename Vector::Mask IndexMask;
+        typedef typename Vector::EntryType Scalar;
 
-		enum {
-			Factor = BaseFactor / Vector::Size
-		};
+        enum {
+            Factor = BaseFactor / Vector::Size
+        };
 
         GatherBase(const char *name, const unsigned int size, const Scalar *_data, double multiplier = 4.)
             : timer(name, multiplier * Vector::Size * Factor, "Values"),
