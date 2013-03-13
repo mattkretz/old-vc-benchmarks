@@ -74,127 +74,84 @@ template<typename Vector> struct CondAssignment
 
         const Vector one(One);
 
-        {
-            // gcc compiles the Scalar::Vector version such that if all four masks are false it runs
-            // 20 times faster than otherwise
-            Benchmark timer("Conditional Assignment (Const Mask)", valuesPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                const Mask mask0 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-                const Mask mask1 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-                const Mask mask2 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-                const Mask mask3 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        data[i + 0](mask0) = one;
-                        data[i + 1](mask1) = one;
-                        data[i + 2](mask2) = one;
-                        data[i + 3](mask3) = one;
-                    }
+        // gcc compiles the Scalar::Vector version such that if all four masks are false it runs
+        // 20 times faster than otherwise
+        const Mask mask0 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
+        const Mask mask1 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
+        const Mask mask2 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
+        const Mask mask3 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
+
+        benchmark_loop(Benchmark("Conditional Assignment (Const Mask)", valuesPerSecondFactor, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    data[i + 0](mask0) = one;
+                    data[i + 1](mask1) = one;
+                    data[i + 2](mask2) = one;
+                    data[i + 3](mask3) = one;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            Benchmark timer("Conditional Assignment (Random Mask)", valuesPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; ++i) {
-                        data[i](masks[i]) = one;
-                    }
+        benchmark_loop(Benchmark("Conditional Assignment (Random Mask)", valuesPerSecondFactor, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; ++i) {
+                    data[i](masks[i]) = one;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            Benchmark timer("Masked Pre-Increment", Factor * Vector::Size * 0.5, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        ++data[i + 0](masks[i + 0]);
-                        ++data[i + 1](masks[i + 1]);
-                        ++data[i + 2](masks[i + 2]);
-                        ++data[i + 3](masks[i + 3]);
-                    }
+        benchmark_loop(Benchmark("Masked Pre-Increment", Factor * Vector::Size * 0.5, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    ++data[i + 0](masks[i + 0]);
+                    ++data[i + 1](masks[i + 1]);
+                    ++data[i + 2](masks[i + 2]);
+                    ++data[i + 3](masks[i + 3]);
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            Benchmark timer("Masked Post-Decrement", Factor * Vector::Size * 0.5, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        data[i + 0](masks[i + 0])--;
-                        data[i + 1](masks[i + 1])--;
-                        data[i + 2](masks[i + 2])--;
-                        data[i + 3](masks[i + 3])--;
-                    }
+        benchmark_loop(Benchmark("Masked Post-Decrement", Factor * Vector::Size * 0.5, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    data[i + 0](masks[i + 0])--;
+                    data[i + 1](masks[i + 1])--;
+                    data[i + 2](masks[i + 2])--;
+                    data[i + 3](masks[i + 3])--;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            const Vector x(3);
-            Benchmark timer("Masked Multiply-Masked Add", Factor * Vector::Size, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        data[i + 0](masks[i + 0]) *= x;
-                        data[i + 1](masks[i + 1]) *= x;
-                        data[i + 2](masks[i + 2]) *= x;
-                        data[i + 3](masks[i + 3]) *= x;
-                        data[i + 0](masks[i + 0]) += one;
-                        data[i + 1](masks[i + 1]) += one;
-                        data[i + 2](masks[i + 2]) += one;
-                        data[i + 3](masks[i + 3]) += one;
-                    }
+        const Vector x(3);
+        benchmark_loop(Benchmark("Masked Multiply-Masked Add", Factor * Vector::Size, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    data[i + 0](masks[i + 0]) *= x;
+                    data[i + 1](masks[i + 1]) *= x;
+                    data[i + 2](masks[i + 2]) *= x;
+                    data[i + 3](masks[i + 3]) *= x;
+                    data[i + 0](masks[i + 0]) += one;
+                    data[i + 1](masks[i + 1]) += one;
+                    data[i + 2](masks[i + 2]) += one;
+                    data[i + 3](masks[i + 3]) += one;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            const Vector x(3);
-            Benchmark timer("Masked Multiply-Add", Factor * Vector::Size, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        data[i + 0](masks[i + 0]) = data[i + 0] * x + one;
-                        data[i + 1](masks[i + 1]) = data[i + 1] * x + one;
-                        data[i + 2](masks[i + 2]) = data[i + 2] * x + one;
-                        data[i + 3](masks[i + 3]) = data[i + 3] * x + one;
-                    }
+        benchmark_loop(Benchmark("Masked Multiply-Add", Factor * Vector::Size, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    data[i + 0](masks[i + 0]) = data[i + 0] * x + one;
+                    data[i + 1](masks[i + 1]) = data[i + 1] * x + one;
+                    data[i + 2](masks[i + 2]) = data[i + 2] * x + one;
+                    data[i + 3](masks[i + 3]) = data[i + 3] * x + one;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
-        {
-            const Vector x(3);
-            Benchmark timer("Masked Division", Factor * Vector::Size * 0.5, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int j = 0; j < OuterFactor; ++j) {
-                    for (int i = 0; i < Factor; i += 4) {
-                        data[i + 0](masks[i + 0]) /= x;
-                        data[i + 1](masks[i + 1]) /= x;
-                        data[i + 2](masks[i + 2]) /= x;
-                        data[i + 3](masks[i + 3]) /= x;
-                    }
+        benchmark_loop(Benchmark("Masked Division", Factor * Vector::Size * 0.5, "Op")) {
+            for (int j = 0; j < OuterFactor; ++j) {
+                for (int i = 0; i < Factor; i += 4) {
+                    data[i + 0](masks[i + 0]) /= x;
+                    data[i + 1](masks[i + 1]) /= x;
+                    data[i + 2](masks[i + 2]) /= x;
+                    data[i + 3](masks[i + 3]) /= x;
                 }
-                timer.Stop();
             }
-            timer.Print();
         }
 
         for (int i = 0; i < Factor; ++i) {
