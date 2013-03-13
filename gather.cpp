@@ -37,36 +37,17 @@ using namespace Vc;
 
 // Intel Core 2 Quad (Q6600) has 8MB L2
 
-template<typename Vector> class NameHelper
-{
-    public:
-        static const char *prependTo(const char *t) {
-            const int sLen = std::strlen(s);
-            const int tLen = std::strlen(t);
-            char *r = new char[sLen + tLen + 2];
-            std::strcpy(r, s);
-            r[sLen] = ' ';
-            std::strcpy(r + sLen + 1, t);
-            r[sLen + tLen + 1] = '\0';
-            return r;
-        }
-        static const char *string() { return s; }
-    private:
-        static const char *s;
-};
-
-template<> const char *NameHelper<float_v>::s = "float_v";
-template<> const char *NameHelper<short_v>::s = "short_v";
-#if VC_IMPL_SSE
-template<> const char *NameHelper<sfloat_v>::s = "sfloat_v";
-#endif
-
 template<typename Vector> class FullMaskHelper
 {
     protected:
         typedef typename Vector::Mask IndexMask;
         static const IndexMask fullMask;
 };
+
+template<> const float_m FullMaskHelper<float_v>::fullMask = float_m(One);
+template<> const short_m FullMaskHelper<short_v>::fullMask = short_m(One);
+template<> const sfloat_m FullMaskHelper<sfloat_v>::fullMask = sfloat_m(One);
+template<> const double_m FullMaskHelper<double_v>::fullMask = double_m(One);
 
 enum {
     BaseFactor = 1600000
@@ -137,10 +118,6 @@ template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHe
             IndexMask mask;
         } *im;
 };
-
-template<> const float_m FullMaskHelper<float_v>::fullMask = float_m(One);
-template<> const short_m FullMaskHelper<short_v>::fullMask = short_m(One);
-template<> const sfloat_m FullMaskHelper<sfloat_v>::fullMask = sfloat_m(One);
 
 static int g_L1ArraySize = 0;
 static int g_L2ArraySize = 0;
@@ -373,6 +350,8 @@ int bmain()
     GatherBenchmark<short_v>::run();
     Benchmark::setColumnData("datatype", "sfloat_v");
     GatherBenchmark<sfloat_v>::run();
+    Benchmark::setColumnData("datatype", "double_v");
+    GatherBenchmark<double_v>::run();
 
     return 0;
 }
