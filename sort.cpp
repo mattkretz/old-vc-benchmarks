@@ -31,53 +31,31 @@ template<typename Vector> struct Helper
     typedef typename Vector::Mask Mask;
     typedef typename Vector::EntryType Scalar;
 
+    enum {
+        Repetitions = 1024 * 32
+    };
+
     static void run()
     {
-        const int Factor = CpuId::L1Data() / sizeof(Vector);
-        const int opPerSecondFactor = Factor * Vector::Size;
-
-        union {
-            Vector *v;
-            typename Vector::EntryType *m;
-        } data = { new Vector[Factor] };
-#ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(&data, Factor * sizeof(Vector));
-#endif
-        for (int i = 0; i < Factor; ++i) {
-            data.v[i] = PseudoRandom<Vector>::next();
-        }
-
-        Vector tmp;
-
-        {
-            Benchmark timer("SSE sort", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor; ++i) {
-                    tmp = data.v[i].sorted();
-                    keepResults(tmp);
-                }
-                timer.Stop();
+        benchmark_loop(Benchmark("Vc sort", Repetitions, "Call")) {
+            Vector input = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(input);
+                Vector tmp = input.sorted();
+                keepResults(tmp);
             }
-            timer.Print();
         }
-        {
-            Benchmark timer("std::sort", opPerSecondFactor, "Op");
-            while (timer.wantsMoreDataPoints()) {
-                timer.Start();
-                for (int i = 0; i < Factor * Vector::Size; i += Vector::Size) {
-                    std::sort(&data.m[i], &data.m[i + Vector::Size]);
-                    tmp = data.m[i];
-                    keepResults(tmp);
-                }
-                timer.Stop();
-                for (int i = 0; i < Factor; ++i) {
-                    data.v[i] = PseudoRandom<Vector>::next();
-                }
+        benchmark_loop(Benchmark("std::sort", Repetitions, "Call")) {
+            const Vector rnd = Vector::Random();
+            Scalar data[Vector::Size];
+            rnd.store(&data[0], Vc::Unaligned);
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(data));
+                std::sort(&data[0], &data[Vector::Size]);
             }
-            timer.Print();
         }
-        delete[] data.v;
     }
 };
 
@@ -86,7 +64,7 @@ int bmain()
     Benchmark::addColumn("datatype");
     Benchmark::setColumnData("datatype", "float_v" ); Helper<float_v >::run();
     Benchmark::setColumnData("datatype", "sfloat_v"); Helper<sfloat_v>::run();
-    //Benchmark::setColumnData("datatype", "double_v"); Helper<double_v>::run();
+    Benchmark::setColumnData("datatype", "double_v"); Helper<double_v>::run();
     Benchmark::setColumnData("datatype", "int_v"   ); Helper<int_v   >::run();
     Benchmark::setColumnData("datatype", "uint_v"  ); Helper<uint_v  >::run();
     Benchmark::setColumnData("datatype", "short_v" ); Helper<short_v >::run();
