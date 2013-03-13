@@ -178,6 +178,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
       add_definitions(-DVC_USE_CPU_TIME)
    endif()
 endif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+add_definitions(-DVC_COMPILE_BENCHMARKS)
 
 if(EXISTS "${Vc_SOURCE_DIR}/common/interleavedmemory.h")
    vc_add_benchmark(interleavedmemorywrapper VC_USE_MASKMOV_SCATTER)
