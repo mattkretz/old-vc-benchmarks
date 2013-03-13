@@ -133,29 +133,6 @@ template<typename Vector> struct GatherBenchmark
         Factor = BaseFactor / Vector::Size
     };
 
-    class GatherOverhead : public GatherBase<Vector, GatherOverhead>
-    {
-        typedef GatherBase<Vector, GatherOverhead> Base;
-        using Base::data;
-        using Base::fullMask;
-        using Base::im;
-
-        public:
-            GatherOverhead(const char *name, const unsigned int _size, const Scalar *_data)
-                : Base(name, _size, _data, 4.)
-            {}
-
-            inline void run() const
-            {
-                for (int i = 0; i < Factor; ++i) {
-                    const int ii = i * 4;
-                    keepResults(im[ii + 0].mask); keepResults(data(ii + 0)); keepResults(im[ii + 0].index); keepResults(fullMask);
-                    keepResults(im[ii + 1].mask); keepResults(data(ii + 1)); keepResults(im[ii + 1].index); keepResults(fullMask);
-                    keepResults(im[ii + 2].mask); keepResults(data(ii + 2)); keepResults(im[ii + 2].index); keepResults(fullMask);
-                    keepResults(im[ii + 3].mask); keepResults(data(ii + 3)); keepResults(im[ii + 3].index); keepResults(fullMask);
-                }
-            }
-    };
     class FullMaskedGather : public GatherBase<Vector, FullMaskedGather>
     {
         typedef GatherBase<Vector, FullMaskedGather> Base;
@@ -266,8 +243,6 @@ template<typename Vector> struct GatherBenchmark
         FullMaskedGather("Memory", MaxArraySize, data);
 
         data += ArrayCount - MaxArraySize;
-        Benchmark::setColumnData("mask", "Overhead");
-        GatherOverhead("Memory", MaxArraySize, data);
 
         Benchmark::setColumnData("mask", "not masked");
         if (L3ArraySize > 0) Gather("L3", L3ArraySize, data);
@@ -289,14 +264,6 @@ template<typename Vector> struct GatherBenchmark
         FullMaskedGather("L1", L1ArraySize, data);
         FullMaskedGather("Cacheline", CacheLineArraySize, data);
         FullMaskedGather("Broadcast", 1, data);
-
-        Benchmark::setColumnData("mask", "Overhead");
-        if (L3ArraySize > 0) GatherOverhead("L3", L3ArraySize, data);
-        GatherOverhead("L2", L2ArraySize, data);
-        GatherOverhead("L1", L1ArraySize, data);
-        GatherOverhead("Cacheline", CacheLineArraySize, data);
-        GatherOverhead("Broadcast", 1, data);
-
 
         delete[] _data;
     }
