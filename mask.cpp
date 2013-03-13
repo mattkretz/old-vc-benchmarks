@@ -74,14 +74,14 @@ template<typename Vector> struct CondAssignment
 
         const Vector one(One);
 
-        // gcc compiles the Scalar::Vector version such that if all four masks are false it runs
-        // 20 times faster than otherwise
-        const Mask mask0 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-        const Mask mask1 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-        const Mask mask2 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-        const Mask mask3 = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-
         benchmark_loop(Benchmark("Conditional Assignment (Const Mask)", valuesPerSecondFactor, "Op")) {
+            // gcc compiles the Scalar::Vector version such that if all four masks are false it runs
+            // 20 times faster than otherwise
+            const Mask mask0 = Vector::Random() < Vector::Random();
+            const Mask mask1 = Vector::Random() < Vector::Random();
+            const Mask mask2 = Vector::Random() < Vector::Random();
+            const Mask mask3 = Vector::Random() < Vector::Random();
+            benchmark_restart();
             for (int j = 0; j < OuterFactor; ++j) {
                 for (int i = 0; i < Factor; i += 4) {
                     data[i + 0](mask0) = one;

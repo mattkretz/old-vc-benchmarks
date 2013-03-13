@@ -217,6 +217,8 @@ extern const char *printHelp2;
             VC_IS_LIKELY(_bm_obj_local.wantsMoreDataPoints() && _bm_obj_local.Start()) || VC_IS_UNLIKELY(_bm_obj_local.Print()); \
             _bm_obj_local.Stop())
 
+#define benchmark_restart _bm_obj_local.Start
+
 template<int S> struct KeepResultsType;
 template<> struct KeepResultsType<1> { typedef   char Type; };
 template<> struct KeepResultsType<2> { typedef  short Type; };
