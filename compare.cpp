@@ -51,10 +51,7 @@ template<typename Vector> class DoCompares
 
             benchmark_loop(Benchmark("operator==", Vector::Size * Repetitions * 6.0, "Op")) {
                 for (int i = 0; i < Repetitions; ++i) {
-                    keepResultsDirty(arg0);
-                    keepResultsDirty(arg1);
-                    keepResultsDirty(arg2);
-                    keepResultsDirty(arg3);
+                    asm("":"+m"(arg0), "+m"(arg1), "+m"(arg2), "+m"(arg3));
                     const M tmp0 = arg0 == arg1; keepResults(tmp0);
                     const M tmp1 = arg0 == arg2; keepResults(tmp1);
                     const M tmp2 = arg0 == arg3; keepResults(tmp2);
@@ -65,10 +62,7 @@ template<typename Vector> class DoCompares
             }
             benchmark_loop(Benchmark("operator<", Vector::Size * Repetitions * 6.0, "Op")) {
                 for (int i = 0; i < Repetitions; ++i) {
-                    keepResultsDirty(arg0);
-                    keepResultsDirty(arg1);
-                    keepResultsDirty(arg2);
-                    keepResultsDirty(arg3);
+                    asm("":"+m"(arg0), "+m"(arg1), "+m"(arg2), "+m"(arg3));
                     const M &tmp0 = arg0 < arg1; keepResults(tmp0);
                     const M &tmp1 = arg0 < arg2; keepResults(tmp1);
                     const M &tmp2 = arg0 < arg3; keepResults(tmp2);
@@ -79,10 +73,7 @@ template<typename Vector> class DoCompares
             }
             benchmark_loop(Benchmark("(operator<).isFull()", Vector::Size * Repetitions * 6.0, "Op")) {
                 for (int i = 0; i < Repetitions; ++i) {
-                    keepResultsDirty(arg0);
-                    keepResultsDirty(arg1);
-                    keepResultsDirty(arg2);
-                    keepResultsDirty(arg3);
+                    asm("":"+m"(arg0), "+m"(arg1), "+m"(arg2), "+m"(arg3));
                     if ((arg0 < arg1).isFull()) doNothingButDontOptimize();
                     if ((arg0 < arg2).isFull()) doNothingButDontOptimize();
                     if ((arg0 < arg3).isFull()) doNothingButDontOptimize();
@@ -93,10 +84,7 @@ template<typename Vector> class DoCompares
             }
             benchmark_loop(Benchmark("!(operator<).isEmpty()", Vector::Size * Repetitions * 6.0, "Op")) {
                 for (int i = 0; i < Repetitions; ++i) {
-                    keepResultsDirty(arg0);
-                    keepResultsDirty(arg1);
-                    keepResultsDirty(arg2);
-                    keepResultsDirty(arg3);
+                    asm("":"+m"(arg0), "+m"(arg1), "+m"(arg2), "+m"(arg3));
                     if (!(arg0 < arg1).isEmpty()) doNothingButDontOptimize();
                     if (!(arg0 < arg2).isEmpty()) doNothingButDontOptimize();
                     if (!(arg0 < arg3).isEmpty()) doNothingButDontOptimize();
