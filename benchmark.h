@@ -234,6 +234,19 @@ template<typename T, int S> struct KeepResultsHelper {
         blackHole[0] = tmp0;
 #endif
     }
+    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
+#ifdef __GNUC__
+        asm volatile("":"+r"(reinterpret_cast<ST &>(tmp0)),
+                "+r"(reinterpret_cast<ST &>(tmp1)),
+                "+r"(reinterpret_cast<ST &>(tmp2)),
+                "+r"(reinterpret_cast<ST &>(tmp3)));
+#else
+        blackHole[0] = tmp0;
+        blackHole[1] = tmp1;
+        blackHole[2] = tmp2;
+        blackHole[3] = tmp3;
+#endif
+    }
     static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
             const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
 #ifdef __GNUC__
@@ -331,6 +344,23 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
 #endif
 };
 template<unsigned int S1, size_t S2, int S3> struct KeepResultsHelper<Vc::AVX::Mask<S1, S2>, S3> {
+    static Vc_INTRINSIC void keepDirty(Vc::AVX::Mask<S1, S2> &tmp0) {
+#ifdef __GNUC__
+        asm volatile("":"+x"(tmp0.k));
+#else
+        blackHole[0] = tmp0;
+#endif
+    }
+    static Vc_INTRINSIC void keepDirty(Vc::AVX::Mask<S1, S2> &tmp0, Vc::AVX::Mask<S1, S2> &tmp1, Vc::AVX::Mask<S1, S2> &tmp2, Vc::AVX::Mask<S1, S2> &tmp3) {
+#ifdef __GNUC__
+        asm volatile("":"+x"(tmp0.k), "+x"(tmp1.k), "+x"(tmp2.k), "+x"(tmp3.k));
+#else
+        blackHole[0] = tmp0;
+        blackHole[1] = tmp1;
+        blackHole[2] = tmp2;
+        blackHole[3] = tmp3;
+#endif
+    }
     static inline void keep(Vc::AVX::Mask<S1, S2> tmp0, Vc::AVX::Mask<S1, S2> tmp1, Vc::AVX::Mask<S1, S2> tmp2, Vc::AVX::Mask<S1, S2> tmp3,
             Vc::AVX::Mask<S1, S2> tmp4, Vc::AVX::Mask<S1, S2> tmp5, Vc::AVX::Mask<S1, S2> tmp6, Vc::AVX::Mask<S1, S2> tmp7) {
 #ifdef __GNUC__
@@ -411,6 +441,16 @@ template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
         blackHole[0] = tmp0;
 #endif
     }
+    static Vc_INTRINSIC void keepDirty(Vc::SSE::Mask<S> &tmp0, Vc::SSE::Mask<S> &tmp1, Vc::SSE::Mask<S> &tmp2, Vc::SSE::Mask<S> &tmp3) {
+#ifdef __GNUC__
+        asm volatile("":"+x"(tmp0.k), "+x"(tmp1.k), "+x"(tmp2.k), "+x"(tmp3.k));
+#else
+        blackHole[0] = tmp0;
+        blackHole[1] = tmp1;
+        blackHole[2] = tmp2;
+        blackHole[3] = tmp3;
+#endif
+    }
     static inline void keep(const Vc::SSE::Mask<S> &tmp0, const Vc::SSE::Mask<S> &tmp1, const Vc::SSE::Mask<S> &tmp2, const Vc::SSE::Mask<S> &tmp3,
             const Vc::SSE::Mask<S> &tmp4, const Vc::SSE::Mask<S> &tmp5, const Vc::SSE::Mask<S> &tmp6, const Vc::SSE::Mask<S> &tmp7) {
 #ifdef __GNUC__
@@ -430,6 +470,17 @@ template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
 #endif
 };
 template<> struct KeepResultsHelper<Vc::SSE::Float8Mask, 32> {
+    static Vc_INTRINSIC void keepDirty(Vc::SSE::Float8Mask &tmp0, Vc::SSE::Float8Mask &tmp1, Vc::SSE::Float8Mask &tmp2, Vc::SSE::Float8Mask &tmp3) {
+#ifdef __GNUC__
+        asm volatile("":"+m"(tmp2), "+m"(tmp3));
+        asm volatile("":"+x"(tmp0.k[0]), "+x"(tmp0.k[1]), "+x"(tmp1.k[0]), "+x"(tmp1.k[1]));
+#else
+        blackHole[0] = tmp0;
+        blackHole[1] = tmp1;
+        blackHole[2] = tmp2;
+        blackHole[3] = tmp3;
+#endif
+    }
     static inline void keep(Vc::SSE::Float8Mask::Argument tmp0, Vc::SSE::Float8Mask::Argument tmp1, Vc::SSE::Float8Mask::Argument tmp2, Vc::SSE::Float8Mask::Argument tmp3,
             Vc::SSE::Float8Mask::Argument tmp4, Vc::SSE::Float8Mask::Argument tmp5, Vc::SSE::Float8Mask::Argument tmp6, Vc::SSE::Float8Mask::Argument tmp7) {
 #ifdef __GNUC__
@@ -454,6 +505,11 @@ template<> struct KeepResultsHelper<Vc::SSE::Float8Mask, 32> {
 template<typename T> static Vc_INTRINSIC void keepResultsDirty(T &tmp0)
 {
     KeepResultsHelper<T, sizeof(T)>::keepDirty(tmp0);
+}
+
+template<typename T> static Vc_INTRINSIC void keepResultsDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3)
+{
+    KeepResultsHelper<T, sizeof(T)>::keepDirty(tmp0, tmp1, tmp2, tmp3);
 }
 
 template<typename T> static inline void keepResults(T tmp0)
