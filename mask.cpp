@@ -51,113 +51,132 @@ template<typename Vector> struct CondAssignment
     typedef typename Vector::EntryType Scalar;
 
     enum {
+        Repetitions = 1024 * 1024,
         OuterFactor = 100
     };
     static void run()
     {
-        const int Factor = nextPowerOf2(CpuId::L1Data() / (2 * sizeof(Vector)));
-        const double valuesPerSecondFactor = OuterFactor * Factor * Vector::Size * 0.5; // 0.5 because mean mask population is 50%
-
-        Mask *masks = new Mask[Factor];
-        for (int i = 0; i < Factor; ++i) {
-            masks[i] = PseudoRandom<Vector>::next() < PseudoRandom<Vector>::next();
-        }
-
-        Vector *data = new Vector[Factor];
-        for (int i = 0; i < Factor; ++i) {
-            data[i].setZero();
-        }
-#ifndef VC_BENCHMARK_NO_MLOCK
-        mlock(masks, Factor * sizeof(Mask));
-        mlock(data, Factor * sizeof(Vector));
-#endif
-
         const Vector one(One);
 
-        benchmark_loop(Benchmark("Conditional Assignment (Const Mask)", valuesPerSecondFactor, "Op")) {
-            // gcc compiles the Scalar::Vector version such that if all four masks are false it runs
-            // 20 times faster than otherwise
-            const Mask mask0 = Vector::Random() < Vector::Random();
-            const Mask mask1 = Vector::Random() < Vector::Random();
-            const Mask mask2 = Vector::Random() < Vector::Random();
-            const Mask mask3 = Vector::Random() < Vector::Random();
+        benchmark_loop(Benchmark("Conditional Assignment", Vector::Size * Repetitions * 4, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
             benchmark_restart();
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    data[i + 0](mask0) = one;
-                    data[i + 1](mask1) = one;
-                    data[i + 2](mask2) = one;
-                    data[i + 3](mask3) = one;
-                }
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                tmp0(mask0) = one;
+                tmp1(mask1) = one;
+                tmp2(mask2) = one;
+                tmp3(mask3) = one;
             }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
-        benchmark_loop(Benchmark("Conditional Assignment (Random Mask)", valuesPerSecondFactor, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; ++i) {
-                    data[i](masks[i]) = one;
-                }
+        benchmark_loop(Benchmark("Masked Pre-Increment", Vector::Size * Repetitions * 4, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                ++tmp0(mask0);
+                ++tmp1(mask1);
+                ++tmp2(mask2);
+                ++tmp3(mask3);
             }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
-        benchmark_loop(Benchmark("Masked Pre-Increment", Factor * Vector::Size * 0.5, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    ++data[i + 0](masks[i + 0]);
-                    ++data[i + 1](masks[i + 1]);
-                    ++data[i + 2](masks[i + 2]);
-                    ++data[i + 3](masks[i + 3]);
-                }
+        benchmark_loop(Benchmark("Masked Post-Decrement", Vector::Size * Repetitions * 4, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                tmp0(mask0)--;
+                tmp1(mask1)--;
+                tmp2(mask2)--;
+                tmp3(mask3)--;
             }
-        }
-        benchmark_loop(Benchmark("Masked Post-Decrement", Factor * Vector::Size * 0.5, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    data[i + 0](masks[i + 0])--;
-                    data[i + 1](masks[i + 1])--;
-                    data[i + 2](masks[i + 2])--;
-                    data[i + 3](masks[i + 3])--;
-                }
-            }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
         const Vector x(3);
-        benchmark_loop(Benchmark("Masked Multiply-Masked Add", Factor * Vector::Size, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    data[i + 0](masks[i + 0]) *= x;
-                    data[i + 1](masks[i + 1]) *= x;
-                    data[i + 2](masks[i + 2]) *= x;
-                    data[i + 3](masks[i + 3]) *= x;
-                    data[i + 0](masks[i + 0]) += one;
-                    data[i + 1](masks[i + 1]) += one;
-                    data[i + 2](masks[i + 2]) += one;
-                    data[i + 3](masks[i + 3]) += one;
-                }
+        benchmark_loop(Benchmark("Masked Multiply-Masked Add", Vector::Size * Repetitions * 8, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                tmp0(mask0) *= x;
+                tmp1(mask1) *= x;
+                tmp2(mask2) *= x;
+                tmp3(mask3) *= x;
+                tmp0(mask0) += one;
+                tmp1(mask1) += one;
+                tmp2(mask2) += one;
+                tmp3(mask3) += one;
             }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
-        benchmark_loop(Benchmark("Masked Multiply-Add", Factor * Vector::Size, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    data[i + 0](masks[i + 0]) = data[i + 0] * x + one;
-                    data[i + 1](masks[i + 1]) = data[i + 1] * x + one;
-                    data[i + 2](masks[i + 2]) = data[i + 2] * x + one;
-                    data[i + 3](masks[i + 3]) = data[i + 3] * x + one;
-                }
+        benchmark_loop(Benchmark("Masked Multiply-Add", Vector::Size * Repetitions * 8, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                tmp0(mask0) = tmp0 * x + one;
+                tmp1(mask1) = tmp1 * x + one;
+                tmp2(mask2) = tmp2 * x + one;
+                tmp3(mask3) = tmp3 * x + one;
             }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
-        benchmark_loop(Benchmark("Masked Division", Factor * Vector::Size * 0.5, "Op")) {
-            for (int j = 0; j < OuterFactor; ++j) {
-                for (int i = 0; i < Factor; i += 4) {
-                    data[i + 0](masks[i + 0]) /= x;
-                    data[i + 1](masks[i + 1]) /= x;
-                    data[i + 2](masks[i + 2]) /= x;
-                    data[i + 3](masks[i + 3]) /= x;
-                }
+        benchmark_loop(Benchmark("Masked Division", Vector::Size * Repetitions * 4, "Op")) {
+            Mask mask0 = Vector::Random() < Vector::Random();
+            Mask mask1 = Vector::Random() < Vector::Random();
+            Mask mask2 = Vector::Random() < Vector::Random();
+            Mask mask3 = Vector::Random() < Vector::Random();
+            Vector tmp0 = Vector::Random();
+            Vector tmp1 = Vector::Random();
+            Vector tmp2 = Vector::Random();
+            Vector tmp3 = Vector::Random();
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                keepResultsDirty(mask0, mask1, mask2, mask3);
+                tmp0(mask0) /= x;
+                tmp1(mask1) /= x;
+                tmp2(mask2) /= x;
+                tmp3(mask3) /= x;
             }
+            keepResults(tmp0, tmp1, tmp2, tmp3);
         }
-
-        for (int i = 0; i < Factor; ++i) {
-            blackHole &= static_cast<int>(data[i] < 1);
-        }
-        delete[] data;
     }
 };
 
