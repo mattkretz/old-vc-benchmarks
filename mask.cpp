@@ -19,7 +19,6 @@
 
 #include <Vc/Vc>
 #include "benchmark.h"
-#include "random.h"
 #include <Vc/cpuid.h>
 
 #include <cstdlib>
