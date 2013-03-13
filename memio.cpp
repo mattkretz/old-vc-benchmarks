@@ -84,7 +84,7 @@ template<typename Vector> class DoMemIos
             }
 
             const int numberOfBytes = sizeof(T) * Factor * Factor2;
-            const Vector foo = PseudoRandom<Vector>::next();
+            const Vector foo = Vector::Random();
 
             // start with reads so that the cache lines are not marked as dirty yet
             benchmark_loop(Benchmark("read", numberOfBytes, "Byte")) {

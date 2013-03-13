@@ -49,7 +49,7 @@ static void doBlah()
         T *t;
     } mem = { new V[ArraySize] };
     for (int i = 0; i < ArraySize; ++i) {
-        mem.v[i] = PseudoRandom<V>::next();
+        mem.v[i] = V::Random();
     }
     V t = mem.v[0];
     mem.v[0].setZero();

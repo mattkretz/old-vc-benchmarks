@@ -94,16 +94,16 @@ template<typename Vector, class GatherImpl> class GatherBase : public FullMaskHe
             mlock(m_data, indexesCount * sizeof(Scalar *));
             mlock(tmp, indexesCount * sizeof(IndexAndMask));
 #endif
-            PseudoRandom<IndexVector>::next();
-            PseudoRandom<IndexVector>::next();
+            IndexVector::Random();
+            IndexVector::Random();
             const IndexVector indexMask((size - 1) & 0xffff);
             const unsigned int maxIndex = 0xffff;
             //const unsigned int maxIndex = ~0u >> ((4 - sizeof(typename IndexVector::EntryType)) * 8);
             const unsigned int maxDataOffset = maxIndex > size ? 1 : size - maxIndex;
             for (int i = 0; i < indexesCount; ++i) {
                 m_data[i] = _data + (rand() % maxDataOffset);
-                tmp[i].index = PseudoRandom<IndexVector>::next() & indexMask;
-                tmp[i].mask = (PseudoRandom<IndexVector>::next() & IndexVector(One)) > 0;
+                tmp[i].index = IndexVector::Random() & indexMask;
+                tmp[i].mask = (IndexVector::Random() & IndexVector(One)) > 0;
             }
             m_data[0] = _data;
             im = tmp;
