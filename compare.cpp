@@ -37,71 +37,74 @@ static inline void doNothingButDontOptimize()
 template<typename Vector> class DoCompares
 {
     enum {
-        Factor2 = 128
+        Repetitions = 1024 * 1024
     };
     public:
         static void run()
         {
-            const int Factor = CpuId::L1Data() / (sizeof(Vector) * 2); // half L1
-            Vector *a = new Vector[Factor + 3];
-#ifndef VC_BENCHMARK_NO_MLOCK
-            mlock(a, (Factor + 3) * sizeof(Vector));
-#endif
-            for (int i = 0; i < Factor + 3; ++i) {
-                a[i] = Vector::Random();
-            }
-
             typedef typename Vector::Mask M;
 
-            benchmark_loop(Benchmark("operator==", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
-                for (int j = 0; j < Factor2; ++j) {
-                    for (int i = 0; i < Factor; ++i) {
-                        const M &tmp0 = a[i + 0] == a[i + 1]; keepResults(tmp0);
-                        const M &tmp1 = a[i + 0] == a[i + 2]; keepResults(tmp1);
-                        const M &tmp2 = a[i + 0] == a[i + 3]; keepResults(tmp2);
-                        const M &tmp3 = a[i + 1] == a[i + 2]; keepResults(tmp3);
-                        const M &tmp4 = a[i + 1] == a[i + 3]; keepResults(tmp4);
-                        const M &tmp5 = a[i + 2] == a[i + 3]; keepResults(tmp5);
-                    }
+            Vector arg0 = Vector::Random();
+            Vector arg1 = Vector::Random();
+            Vector arg2 = Vector::Random();
+            Vector arg3 = Vector::Random();
+
+            benchmark_loop(Benchmark("operator==", Vector::Size * Repetitions * 6.0, "Op")) {
+                for (int i = 0; i < Repetitions; ++i) {
+                    keepResultsDirty(arg0);
+                    keepResultsDirty(arg1);
+                    keepResultsDirty(arg2);
+                    keepResultsDirty(arg3);
+                    const M tmp0 = arg0 == arg1; keepResults(tmp0);
+                    const M tmp1 = arg0 == arg2; keepResults(tmp1);
+                    const M tmp2 = arg0 == arg3; keepResults(tmp2);
+                    const M tmp3 = arg1 == arg2; keepResults(tmp3);
+                    const M tmp4 = arg1 == arg3; keepResults(tmp4);
+                    const M tmp5 = arg2 == arg3; keepResults(tmp5);
                 }
             }
-            benchmark_loop(Benchmark("operator<", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
-                for (int j = 0; j < Factor2; ++j) {
-                    for (int i = 0; i < Factor; ++i) {
-                        const M &tmp0 = a[i + 0] < a[i + 1]; keepResults(tmp0);
-                        const M &tmp1 = a[i + 0] < a[i + 2]; keepResults(tmp1);
-                        const M &tmp2 = a[i + 0] < a[i + 3]; keepResults(tmp2);
-                        const M &tmp3 = a[i + 1] < a[i + 2]; keepResults(tmp3);
-                        const M &tmp4 = a[i + 1] < a[i + 3]; keepResults(tmp4);
-                        const M &tmp5 = a[i + 2] < a[i + 3]; keepResults(tmp5);
-                    }
+            benchmark_loop(Benchmark("operator<", Vector::Size * Repetitions * 6.0, "Op")) {
+                for (int i = 0; i < Repetitions; ++i) {
+                    keepResultsDirty(arg0);
+                    keepResultsDirty(arg1);
+                    keepResultsDirty(arg2);
+                    keepResultsDirty(arg3);
+                    const M &tmp0 = arg0 < arg1; keepResults(tmp0);
+                    const M &tmp1 = arg0 < arg2; keepResults(tmp1);
+                    const M &tmp2 = arg0 < arg3; keepResults(tmp2);
+                    const M &tmp3 = arg1 < arg2; keepResults(tmp3);
+                    const M &tmp4 = arg1 < arg3; keepResults(tmp4);
+                    const M &tmp5 = arg2 < arg3; keepResults(tmp5);
                 }
             }
-            benchmark_loop(Benchmark("(operator<).isFull()", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
-                for (int j = 0; j < Factor2; ++j) {
-                    for (int i = 0; i < Factor; ++i) {
-                        if ((a[i + 0] < a[i + 1]).isFull()) doNothingButDontOptimize();
-                        if ((a[i + 0] < a[i + 2]).isFull()) doNothingButDontOptimize();
-                        if ((a[i + 0] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                        if ((a[i + 1] < a[i + 2]).isFull()) doNothingButDontOptimize();
-                        if ((a[i + 1] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                        if ((a[i + 2] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                    }
+            benchmark_loop(Benchmark("(operator<).isFull()", Vector::Size * Repetitions * 6.0, "Op")) {
+                for (int i = 0; i < Repetitions; ++i) {
+                    keepResultsDirty(arg0);
+                    keepResultsDirty(arg1);
+                    keepResultsDirty(arg2);
+                    keepResultsDirty(arg3);
+                    if ((arg0 < arg1).isFull()) doNothingButDontOptimize();
+                    if ((arg0 < arg2).isFull()) doNothingButDontOptimize();
+                    if ((arg0 < arg3).isFull()) doNothingButDontOptimize();
+                    if ((arg1 < arg2).isFull()) doNothingButDontOptimize();
+                    if ((arg1 < arg3).isFull()) doNothingButDontOptimize();
+                    if ((arg2 < arg3).isFull()) doNothingButDontOptimize();
                 }
             }
-            benchmark_loop(Benchmark("!(operator<).isEmpty()", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
-                for (int j = 0; j < Factor2; ++j) {
-                    for (int i = 0; i < Factor; ++i) {
-                        if (!(a[i + 0] < a[i + 1]).isEmpty()) doNothingButDontOptimize();
-                        if (!(a[i + 0] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
-                        if (!(a[i + 0] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                        if (!(a[i + 1] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
-                        if (!(a[i + 1] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                        if (!(a[i + 2] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                    }
+            benchmark_loop(Benchmark("!(operator<).isEmpty()", Vector::Size * Repetitions * 6.0, "Op")) {
+                for (int i = 0; i < Repetitions; ++i) {
+                    keepResultsDirty(arg0);
+                    keepResultsDirty(arg1);
+                    keepResultsDirty(arg2);
+                    keepResultsDirty(arg3);
+                    if (!(arg0 < arg1).isEmpty()) doNothingButDontOptimize();
+                    if (!(arg0 < arg2).isEmpty()) doNothingButDontOptimize();
+                    if (!(arg0 < arg3).isEmpty()) doNothingButDontOptimize();
+                    if (!(arg1 < arg2).isEmpty()) doNothingButDontOptimize();
+                    if (!(arg1 < arg3).isEmpty()) doNothingButDontOptimize();
+                    if (!(arg2 < arg3).isEmpty()) doNothingButDontOptimize();
                 }
             }
-            delete[] a;
         }
 };
 
