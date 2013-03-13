@@ -53,77 +53,53 @@ template<typename Vector> class DoCompares
 
             typedef typename Vector::Mask M;
 
-            {
-                Benchmark timer("operator==", Vector::Size * Factor * Factor2 * 6.0, "Op");
-                while (timer.wantsMoreDataPoints()) {
-                    timer.Start();
-                    for (int j = 0; j < Factor2; ++j) {
-                        for (int i = 0; i < Factor; ++i) {
-                            const M &tmp0 = a[i + 0] == a[i + 1]; keepResults(tmp0);
-                            const M &tmp1 = a[i + 0] == a[i + 2]; keepResults(tmp1);
-                            const M &tmp2 = a[i + 0] == a[i + 3]; keepResults(tmp2);
-                            const M &tmp3 = a[i + 1] == a[i + 2]; keepResults(tmp3);
-                            const M &tmp4 = a[i + 1] == a[i + 3]; keepResults(tmp4);
-                            const M &tmp5 = a[i + 2] == a[i + 3]; keepResults(tmp5);
-                        }
+            benchmark_loop(Benchmark("operator==", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
+                for (int j = 0; j < Factor2; ++j) {
+                    for (int i = 0; i < Factor; ++i) {
+                        const M &tmp0 = a[i + 0] == a[i + 1]; keepResults(tmp0);
+                        const M &tmp1 = a[i + 0] == a[i + 2]; keepResults(tmp1);
+                        const M &tmp2 = a[i + 0] == a[i + 3]; keepResults(tmp2);
+                        const M &tmp3 = a[i + 1] == a[i + 2]; keepResults(tmp3);
+                        const M &tmp4 = a[i + 1] == a[i + 3]; keepResults(tmp4);
+                        const M &tmp5 = a[i + 2] == a[i + 3]; keepResults(tmp5);
                     }
-                    timer.Stop();
                 }
-                timer.Print();
             }
-            {
-                Benchmark timer("operator<", Vector::Size * Factor * Factor2 * 6.0, "Op");
-                while (timer.wantsMoreDataPoints()) {
-                    timer.Start();
-                    for (int j = 0; j < Factor2; ++j) {
-                        for (int i = 0; i < Factor; ++i) {
-                            const M &tmp0 = a[i + 0] < a[i + 1]; keepResults(tmp0);
-                            const M &tmp1 = a[i + 0] < a[i + 2]; keepResults(tmp1);
-                            const M &tmp2 = a[i + 0] < a[i + 3]; keepResults(tmp2);
-                            const M &tmp3 = a[i + 1] < a[i + 2]; keepResults(tmp3);
-                            const M &tmp4 = a[i + 1] < a[i + 3]; keepResults(tmp4);
-                            const M &tmp5 = a[i + 2] < a[i + 3]; keepResults(tmp5);
-                        }
+            benchmark_loop(Benchmark("operator<", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
+                for (int j = 0; j < Factor2; ++j) {
+                    for (int i = 0; i < Factor; ++i) {
+                        const M &tmp0 = a[i + 0] < a[i + 1]; keepResults(tmp0);
+                        const M &tmp1 = a[i + 0] < a[i + 2]; keepResults(tmp1);
+                        const M &tmp2 = a[i + 0] < a[i + 3]; keepResults(tmp2);
+                        const M &tmp3 = a[i + 1] < a[i + 2]; keepResults(tmp3);
+                        const M &tmp4 = a[i + 1] < a[i + 3]; keepResults(tmp4);
+                        const M &tmp5 = a[i + 2] < a[i + 3]; keepResults(tmp5);
                     }
-                    timer.Stop();
                 }
-                timer.Print();
             }
-            {
-                Benchmark timer("(operator<).isFull()", Vector::Size * Factor * Factor2 * 6.0, "Op");
-                while (timer.wantsMoreDataPoints()) {
-                    timer.Start();
-                    for (int j = 0; j < Factor2; ++j) {
-                        for (int i = 0; i < Factor; ++i) {
-                            if ((a[i + 0] < a[i + 1]).isFull()) doNothingButDontOptimize();
-                            if ((a[i + 0] < a[i + 2]).isFull()) doNothingButDontOptimize();
-                            if ((a[i + 0] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                            if ((a[i + 1] < a[i + 2]).isFull()) doNothingButDontOptimize();
-                            if ((a[i + 1] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                            if ((a[i + 2] < a[i + 3]).isFull()) doNothingButDontOptimize();
-                        }
+            benchmark_loop(Benchmark("(operator<).isFull()", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
+                for (int j = 0; j < Factor2; ++j) {
+                    for (int i = 0; i < Factor; ++i) {
+                        if ((a[i + 0] < a[i + 1]).isFull()) doNothingButDontOptimize();
+                        if ((a[i + 0] < a[i + 2]).isFull()) doNothingButDontOptimize();
+                        if ((a[i + 0] < a[i + 3]).isFull()) doNothingButDontOptimize();
+                        if ((a[i + 1] < a[i + 2]).isFull()) doNothingButDontOptimize();
+                        if ((a[i + 1] < a[i + 3]).isFull()) doNothingButDontOptimize();
+                        if ((a[i + 2] < a[i + 3]).isFull()) doNothingButDontOptimize();
                     }
-                    timer.Stop();
                 }
-                timer.Print();
             }
-            {
-                Benchmark timer("!(operator<).isEmpty()", Vector::Size * Factor * Factor2 * 6.0, "Op");
-                while (timer.wantsMoreDataPoints()) {
-                    timer.Start();
-                    for (int j = 0; j < Factor2; ++j) {
-                        for (int i = 0; i < Factor; ++i) {
-                            if (!(a[i + 0] < a[i + 1]).isEmpty()) doNothingButDontOptimize();
-                            if (!(a[i + 0] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
-                            if (!(a[i + 0] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                            if (!(a[i + 1] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
-                            if (!(a[i + 1] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                            if (!(a[i + 2] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
-                        }
+            benchmark_loop(Benchmark("!(operator<).isEmpty()", Vector::Size * Factor * Factor2 * 6.0, "Op")) {
+                for (int j = 0; j < Factor2; ++j) {
+                    for (int i = 0; i < Factor; ++i) {
+                        if (!(a[i + 0] < a[i + 1]).isEmpty()) doNothingButDontOptimize();
+                        if (!(a[i + 0] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
+                        if (!(a[i + 0] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
+                        if (!(a[i + 1] < a[i + 2]).isEmpty()) doNothingButDontOptimize();
+                        if (!(a[i + 1] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
+                        if (!(a[i + 2] < a[i + 3]).isEmpty()) doNothingButDontOptimize();
                     }
-                    timer.Stop();
                 }
-                timer.Print();
             }
             delete[] a;
         }
