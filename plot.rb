@@ -161,8 +161,8 @@ benchmarks = {
     },
     'gather' => { #{{{1
         :sort => [:bars, :clusters],
-        :pageColumn => 'benchmark.name',
-        :groupColumn => 'mask',
+        :pageColumn => 'index spread',
+        :groupColumn => 'benchmark.name',
         :barColumns => 'Implementation',
         :clusterColumns => 'datatype',
         :dataColumn => 'Valuess/Cycle',
