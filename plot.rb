@@ -165,8 +165,7 @@ benchmarks = {
         :groupColumn => 'benchmark.name',
         :barColumns => 'Implementation',
         :clusterColumns => 'datatype',
-        :dataColumn => 'Valuess/Cycle',
-        :ylabel => 'Values / Cycle'
+        :dataColumn => 'Values/Cycle'
     },
     'mask' => { #{{{1
         :sort => [:bars, :clusters],
