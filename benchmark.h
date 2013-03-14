@@ -436,7 +436,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
 template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
     static Vc_INTRINSIC void keepDirty(Vc::SSE::Mask<S> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
+        asm volatile("":"+x"(tmp0.k));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -470,6 +470,13 @@ template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
 #endif
 };
 template<> struct KeepResultsHelper<Vc::SSE::Float8Mask, 32> {
+    static Vc_INTRINSIC void keepDirty(Vc::SSE::Float8Mask &tmp0) {
+#ifdef __GNUC__
+        asm volatile("":"+x"(tmp0.k[0]), "+x"(tmp0.k[1]));
+#else
+        blackHole[0] = tmp0;
+#endif
+    }
     static Vc_INTRINSIC void keepDirty(Vc::SSE::Float8Mask &tmp0, Vc::SSE::Float8Mask &tmp1, Vc::SSE::Float8Mask &tmp2, Vc::SSE::Float8Mask &tmp3) {
 #ifdef __GNUC__
         asm volatile("":"+m"(tmp2), "+m"(tmp3));
