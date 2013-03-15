@@ -226,20 +226,25 @@ template<> struct KeepResultsType<4> { typedef    int Type; };
 template<> struct KeepResultsType<8> { typedef double Type; };
 
 template<typename T, int S> struct KeepResultsHelper {
+#ifdef VC_CLANG
     typedef typename KeepResultsType<S>::Type ST;
+    static ST &cast(T &x) { return reinterpret_cast<ST &>(x); }
+#else
+    static T &cast(T &x) { return x; }
+#endif
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+r"(reinterpret_cast<ST &>(tmp0)));
+        asm volatile("":"+r"(cast(tmp0)));
 #else
         blackHole[0] = tmp0;
 #endif
     }
     static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
 #ifdef __GNUC__
-        asm volatile("":"+r"(reinterpret_cast<ST &>(tmp0)),
-                "+r"(reinterpret_cast<ST &>(tmp1)),
-                "+r"(reinterpret_cast<ST &>(tmp2)),
-                "+r"(reinterpret_cast<ST &>(tmp3)));
+        asm volatile("":"+r"(cast(tmp0)),
+                        "+r"(cast(tmp1)),
+                        "+r"(cast(tmp2)),
+                        "+r"(cast(tmp3)));
 #else
         blackHole[0] = tmp0;
         blackHole[1] = tmp1;
