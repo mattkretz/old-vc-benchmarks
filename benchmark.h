@@ -279,6 +279,89 @@ template<typename T, int S> struct KeepResultsHelper {
     static T blackHole[8];
 #endif
 };
+#if defined(__GNUC__) && defined(VC_IMPL_Scalar)
+template<int S> struct KeepResultsHelper<Vc::Vector<float>, S> {
+    typedef Vc::Vector<float> T;
+#ifdef VC_CLANG
+    static float &cast(T &x) { return reinterpret_cast<float &>(x); }
+#else
+    static T &cast(T &x) { return x; }
+#endif
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
+        asm volatile("":"+x"(cast(tmp0)));
+    }
+    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
+        asm volatile("":"+x"(cast(tmp0)),
+                        "+x"(cast(tmp1)),
+                        "+x"(cast(tmp2)),
+                        "+x"(cast(tmp3)));
+    }
+    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
+#ifdef __x86_64__
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
+                         "x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#else
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3));
+        asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#endif
+    }
+};
+template<int S> struct KeepResultsHelper<Vc::Vector<Vc::sfloat>, S> {
+    typedef Vc::Vector<Vc::sfloat> T;
+#ifdef VC_CLANG
+    static float &cast(T &x) { return reinterpret_cast<float &>(x); }
+#else
+    static T &cast(T &x) { return x; }
+#endif
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
+        asm volatile("":"+x"(cast(tmp0)));
+    }
+    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
+        asm volatile("":"+x"(cast(tmp0)),
+                        "+x"(cast(tmp1)),
+                        "+x"(cast(tmp2)),
+                        "+x"(cast(tmp3)));
+    }
+    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
+#ifdef __x86_64__
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
+                         "x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#else
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3));
+        asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#endif
+    }
+};
+template<int S> struct KeepResultsHelper<Vc::Vector<double>, S> {
+    typedef Vc::Vector<double> T;
+#ifdef VC_CLANG
+    static double &cast(T &x) { return reinterpret_cast<double &>(x); }
+#else
+    static T &cast(T &x) { return x; }
+#endif
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
+        asm volatile("":"+x"(cast(tmp0)));
+    }
+    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
+        asm volatile("":"+x"(cast(tmp0)),
+                        "+x"(cast(tmp1)),
+                        "+x"(cast(tmp2)),
+                        "+x"(cast(tmp3)));
+    }
+    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
+#ifdef __x86_64__
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
+                         "x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#else
+        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3));
+        asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
+#endif
+    }
+};
+#endif // __GNUC__ && VC_IMPL_Scalar
 
 #ifdef __GNUC__
 template<typename T>
