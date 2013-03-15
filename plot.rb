@@ -16,6 +16,7 @@ class LabelTranslation #{{{
             'arithmetics2' => 'Arithmetic Operations Benchmark (without loads/stores)',
             'flops' => 'Peak Flop Benchmark',
             'gather' => 'Gathers Benchmark',
+            'scatter' => 'Scatters Benchmark',
             'mask' => 'Masks Benchmark',
             'compare' => 'Compares Benchmark',
             'math' => 'Math Functions Benchmark',
@@ -160,6 +161,14 @@ benchmarks = {
         :ylabel => 'Floating-Point Operations / Cycle'
     },
     'gather' => { #{{{1
+        :sort => [:bars, :clusters],
+        :pageColumn => 'index spread',
+        :groupColumn => 'benchmark.name',
+        :barColumns => 'Implementation',
+        :clusterColumns => 'datatype',
+        :dataColumn => 'Values/Cycle'
+    },
+    'scatter' => { #{{{1
         :sort => [:bars, :clusters],
         :pageColumn => 'index spread',
         :groupColumn => 'benchmark.name',
