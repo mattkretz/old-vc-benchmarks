@@ -382,7 +382,7 @@ static inline __attribute__((always_inline)) void _keepXRegister(T x0, T x1, T x
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
+        asm volatile("":"+x"(tmp0));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -408,7 +408,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
+        asm volatile("":"+x"(tmp0));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -471,7 +471,7 @@ template<unsigned int S1, size_t S2, int S3> struct KeepResultsHelper<Vc::AVX::M
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
+        asm volatile("":"+x"(tmp0.d.data));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -479,7 +479,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
     static inline void keep(const Vc::Vector<T> &tmp0, const Vc::Vector<T> &tmp1, const Vc::Vector<T> &tmp2, const Vc::Vector<T> &tmp3,
             const Vc::Vector<T> &tmp4, const Vc::Vector<T> &tmp5, const Vc::Vector<T> &tmp6, const Vc::Vector<T> &tmp7) {
 #ifdef __GNUC__
-        _keepXRegister(tmp0.data(), tmp1.data(), tmp2.data(), tmp3.data(), tmp4.data(), tmp5.data(), tmp6.data(), tmp7.data());
+        _keepXRegister(tmp0.d.data, tmp1.d.data, tmp2.d.data, tmp3.d.data, tmp4.d.data, tmp5.d.data, tmp6.d.data, tmp7.d.data);
     }
 #else
         blackHole[0] = tmp0;
@@ -497,7 +497,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()[0]), "+x"(tmp0.data()[1]));
+        asm volatile("":"+x"(tmp0.d.data.d[0]), "+x"(tmp0.d.data.d[1]));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -505,8 +505,8 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
     static inline void keep(const Vc::Vector<T> &tmp0, const Vc::Vector<T> &tmp1, const Vc::Vector<T> &tmp2, const Vc::Vector<T> &tmp3,
             const Vc::Vector<T> &tmp4, const Vc::Vector<T> &tmp5, const Vc::Vector<T> &tmp6, const Vc::Vector<T> &tmp7) {
 #ifdef __GNUC__
-        _keepXRegister(tmp0.data()[0], tmp0.data()[1], tmp1.data()[0], tmp1.data()[1], tmp2.data()[0], tmp2.data()[1], tmp3.data()[0], tmp3.data()[1]);
-        _keepXRegister(tmp4.data()[0], tmp4.data()[1], tmp5.data()[0], tmp5.data()[1], tmp6.data()[0], tmp6.data()[1], tmp7.data()[0], tmp7.data()[1]);
+        _keepXRegister(tmp0.d.data.d[0], tmp0.d.data.d[1], tmp1.d.data.d[0], tmp1.d.data.d[1], tmp2.d.data.d[0], tmp2.d.data.d[1], tmp3.d.data.d[0], tmp3.d.data.d[1]);
+        _keepXRegister(tmp4.d.data.d[0], tmp4.d.data.d[1], tmp5.d.data.d[0], tmp5.d.data.d[1], tmp6.d.data.d[0], tmp6.d.data.d[1], tmp7.d.data.d[0], tmp7.d.data.d[1]);
     }
 #else
         blackHole[0] = tmp0;
