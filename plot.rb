@@ -577,6 +577,7 @@ pdfs = Array.new
     pdfs << pdffile
     gnuplot.print <<EOF
 #set yrange [0:#{maxy}]
+set yrange [0:*]
 set output "#{pdffile}"
 set ylabel "#{opt[:ylabel] or opt[:dataColumn].sub /\//, ' / '}"
 set key #{key}
