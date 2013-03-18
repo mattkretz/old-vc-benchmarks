@@ -536,11 +536,12 @@ else
 end
 gnuplot.print <<EOF
 set pointsize 0.6
-set style histogram errorbars gap 1
+set bars fullwidth
+set style histogram errorbars gap 1 lw 1
 set style data histogram
-set style fill transparent solid 0.85 noborder
+set style fill transparent solid 0.85 border -1
 set border 10       # only lines on the left and right
-set boxwidth 0.91      # width of the bars
+#set boxwidth 0.91      # width of the bars
 set xtics scale 0 # no tics on below histogram bars
 set ytics scale 0
 set y2tics scale 0
