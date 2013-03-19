@@ -35,10 +35,73 @@ template<typename V> class GatherBenchmark
         Repetitions = 1024 * 128
     };
 
+    static T data[2048];
+
+    NOINLINE static void fullMask(const int indexSpread)
+    {
+        benchmark_loop(Benchmark("full mask", Repetitions * V::Size * 4, "Value")) {
+            M mask(Vc::One);
+            I indexes = I::Random() & I(indexSpread);
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp0(&data[0], indexes, mask); keepResults(tmp0);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp1(&data[1], indexes, mask); keepResults(tmp1);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp2(&data[2], indexes, mask); keepResults(tmp2);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp3(&data[3], indexes, mask); keepResults(tmp3);
+            }
+        }
+    }
+
+    NOINLINE static void randomMask(const int indexSpread)
+    {
+        benchmark_loop(Benchmark("random mask", Repetitions * V::Size * 4, "Value")) {
+            M mask0 = V::Random() < V::Random();
+            M mask1 = V::Random() < V::Random();
+            M mask2 = V::Random() < V::Random();
+            M mask3 = V::Random() < V::Random();
+            I indexes = I::Random() & I(indexSpread);
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(indexes)); keepResultsDirty(mask0); V tmp0(&data[0], indexes, mask0); keepResults(tmp0);
+                asm("":"+m"(indexes)); keepResultsDirty(mask1); V tmp1(&data[1], indexes, mask1); keepResults(tmp1);
+                asm("":"+m"(indexes)); keepResultsDirty(mask2); V tmp2(&data[2], indexes, mask2); keepResults(tmp2);
+                asm("":"+m"(indexes)); keepResultsDirty(mask3); V tmp3(&data[3], indexes, mask3); keepResults(tmp3);
+            }
+        }
+    }
+
+    NOINLINE static void zeroMask(const int indexSpread)
+    {
+        benchmark_loop(Benchmark("zero mask", Repetitions * V::Size * 4, "Value")) {
+            M mask(Vc::Zero);
+            I indexes = I::Random() & I(indexSpread);
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp0(&data[0], indexes, mask); keepResults(tmp0);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp1(&data[1], indexes, mask); keepResults(tmp1);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp2(&data[2], indexes, mask); keepResults(tmp2);
+                asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp3(&data[3], indexes, mask); keepResults(tmp3);
+            }
+        }
+    }
+
+    NOINLINE static void withoutMask(const int indexSpread)
+    {
+        benchmark_loop(Benchmark("without mask", Repetitions * V::Size * 4, "Value")) {
+            I indexes = I::Random() & I(indexSpread);
+            benchmark_restart();
+            for (int i = 0; i < Repetitions; ++i) {
+                asm("":"+m"(indexes)); V tmp0(&data[0], indexes); keepResults(tmp0);
+                asm("":"+m"(indexes)); V tmp1(&data[1], indexes); keepResults(tmp1);
+                asm("":"+m"(indexes)); V tmp2(&data[2], indexes); keepResults(tmp2);
+                asm("":"+m"(indexes)); V tmp3(&data[3], indexes); keepResults(tmp3);
+            }
+        }
+    }
+
 public:
     static void run()
     {
-        T data[2048];
         for (int i = 0; i <= 2048 - V::Size; i += V::Size) {
             V::Random().store(&data[i], Vc::Unaligned);
         }
@@ -50,55 +113,18 @@ public:
             ss << indexSpread + 1;
             Benchmark::setColumnData("index spread", ss.str());
 
-            benchmark_loop(Benchmark("full mask", Repetitions * V::Size * 4, "Value")) {
-                M mask(Vc::One);
-                I indexes = I::Random() & I(indexSpread);
-                benchmark_restart();
-                for (int i = 0; i < Repetitions; ++i) {
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp0(&data[0], indexes, mask); keepResults(tmp0);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp1(&data[1], indexes, mask); keepResults(tmp1);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp2(&data[2], indexes, mask); keepResults(tmp2);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp3(&data[3], indexes, mask); keepResults(tmp3);
-                }
-            }
-            benchmark_loop(Benchmark("random mask", Repetitions * V::Size * 4, "Value")) {
-                M mask0 = V::Random() < V::Random();
-                M mask1 = V::Random() < V::Random();
-                M mask2 = V::Random() < V::Random();
-                M mask3 = V::Random() < V::Random();
-                I indexes = I::Random() & I(indexSpread);
-                benchmark_restart();
-                for (int i = 0; i < Repetitions; ++i) {
-                    asm("":"+m"(indexes)); keepResultsDirty(mask0); V tmp0(&data[0], indexes, mask0); keepResults(tmp0);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask1); V tmp1(&data[1], indexes, mask1); keepResults(tmp1);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask2); V tmp2(&data[2], indexes, mask2); keepResults(tmp2);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask3); V tmp3(&data[3], indexes, mask3); keepResults(tmp3);
-                }
-            }
-            benchmark_loop(Benchmark("zero mask", Repetitions * V::Size * 4, "Value")) {
-                M mask(Vc::Zero);
-                I indexes = I::Random() & I(indexSpread);
-                benchmark_restart();
-                for (int i = 0; i < Repetitions; ++i) {
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp0(&data[0], indexes, mask); keepResults(tmp0);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp1(&data[1], indexes, mask); keepResults(tmp1);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp2(&data[2], indexes, mask); keepResults(tmp2);
-                    asm("":"+m"(indexes)); keepResultsDirty(mask); V tmp3(&data[3], indexes, mask); keepResults(tmp3);
-                }
-            }
-            benchmark_loop(Benchmark("without mask", Repetitions * V::Size * 4, "Value")) {
-                I indexes = I::Random() & I(indexSpread);
-                benchmark_restart();
-                for (int i = 0; i < Repetitions; ++i) {
-                    asm("":"+m"(indexes)); V tmp0(&data[0], indexes); keepResults(tmp0);
-                    asm("":"+m"(indexes)); V tmp1(&data[1], indexes); keepResults(tmp1);
-                    asm("":"+m"(indexes)); V tmp2(&data[2], indexes); keepResults(tmp2);
-                    asm("":"+m"(indexes)); V tmp3(&data[3], indexes); keepResults(tmp3);
-                }
-            }
+            fullMask(indexSpread);
+            randomMask(indexSpread);
+            zeroMask(indexSpread);
+            withoutMask(indexSpread);
         }
     }
 };
+
+template<>  float GatherBenchmark< float_v>::data[2048] = {};
+template<>  float GatherBenchmark<sfloat_v>::data[2048] = {};
+template<>  short GatherBenchmark< short_v>::data[2048] = {};
+template<> double GatherBenchmark<double_v>::data[2048] = {};
 
 int bmain()
 {

@@ -59,6 +59,10 @@
 #define Vc_INTRINSIC Vc_ALWAYS_INLINE
 #endif
 
+#ifdef __GNUC__
+#define NOINLINE __attribute__((noinline))
+#endif
+
 class Benchmark
 {
     friend int main(int, char**);
