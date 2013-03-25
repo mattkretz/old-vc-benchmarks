@@ -25,6 +25,7 @@ using Vc::float_v;
 using Vc::short_v;
 using Vc::sfloat_v;
 using Vc::double_v;
+using Vc::int_v;
 
 template<typename V> class GatherBenchmark
 {
@@ -125,6 +126,7 @@ template<>  float GatherBenchmark< float_v>::data[2048] = {};
 template<>  float GatherBenchmark<sfloat_v>::data[2048] = {};
 template<>  short GatherBenchmark< short_v>::data[2048] = {};
 template<> double GatherBenchmark<double_v>::data[2048] = {};
+template<>    int GatherBenchmark<   int_v>::data[2048] = {};
 
 int bmain()
 {
@@ -132,6 +134,7 @@ int bmain()
     Benchmark::addColumn("index spread");
 
     Benchmark::setColumnData("datatype",  "float_v"); GatherBenchmark< float_v>::run();
+    Benchmark::setColumnData("datatype",    "int_v"); GatherBenchmark<   int_v>::run();
     Benchmark::setColumnData("datatype",  "short_v"); GatherBenchmark< short_v>::run();
     Benchmark::setColumnData("datatype", "sfloat_v"); GatherBenchmark<sfloat_v>::run();
     Benchmark::setColumnData("datatype", "double_v"); GatherBenchmark<double_v>::run();
