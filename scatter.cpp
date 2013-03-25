@@ -25,6 +25,7 @@ using Vc::float_v;
 using Vc::short_v;
 using Vc::sfloat_v;
 using Vc::double_v;
+using Vc::int_v;
 
 template<typename V> class ScatterBenchmark
 {
@@ -102,6 +103,7 @@ public:
 
 template<> float ScatterBenchmark<float_v>::data[2048] = { 0.f };
 template<> short ScatterBenchmark<short_v>::data[2048] = { 0 };
+template<> int   ScatterBenchmark<  int_v>::data[2048] = { 0 };
 template<> float ScatterBenchmark<sfloat_v>::data[2048] = { 0.f };
 template<> double ScatterBenchmark<double_v>::data[2048] = { 0. };
 
@@ -114,6 +116,7 @@ int bmain()
     Benchmark::setColumnData("datatype",  "short_v"); ScatterBenchmark< short_v>::run();
     Benchmark::setColumnData("datatype", "sfloat_v"); ScatterBenchmark<sfloat_v>::run();
     Benchmark::setColumnData("datatype", "double_v"); ScatterBenchmark<double_v>::run();
+    Benchmark::setColumnData("datatype",    "int_v"); ScatterBenchmark<   int_v>::run();
 
     return 0;
 }
