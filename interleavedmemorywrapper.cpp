@@ -105,6 +105,7 @@ template<typename V> class Runner
 #endif
 
         Vc::InterleavedMemoryWrapper<TestStruct, V> wrapper(&data[0]);
+#if VC_VERSION_NUMBER >= VC_VERSION_CHECK(0,7,70)
         benchmark_loop(Benchmark("deinterleave (successive)", Repetitions * sizeof(TestStruct), "Byte")) {
             for (int i = 0; i < Repetitions; i += V::Size) {
                 for (int j = 0; j < V::Size; ++j) {
@@ -121,6 +122,7 @@ template<typename V> class Runner
                 interleave<COUNT, V>(wrapper, 0);
             }
         }
+#endif
         benchmark_loop(Benchmark("deinterleave (index vector)", Repetitions * sizeof(TestStruct), "Byte")) {
             for (int i = 0; i < Repetitions; i += V::Size) {
                 for (int j = 0; j < V::Size; ++j) {
@@ -137,6 +139,7 @@ template<typename V> class Runner
                 interleave<COUNT, V>(wrapper, I::IndexesFromZero());
             }
         }
+#if VC_VERSION_NUMBER >= VC_VERSION_CHECK(0,7,70)
         benchmark_loop(Benchmark("normalize interleaved vectors (successive)", Repetitions * sizeof(TestStruct), "Byte")) {
             for (int i = 0; i < Repetitions; i += V::Size) {
                 for (int j = 0; j < V::Size; ++j) {
@@ -145,6 +148,7 @@ template<typename V> class Runner
                 normalize<COUNT, V>(wrapper, 0);
             }
         }
+#endif
         benchmark_loop(Benchmark("normalize interleaved vectors (index vector)", Repetitions * sizeof(TestStruct), "Byte")) {
             for (int i = 0; i < Repetitions; i += V::Size) {
                 for (int j = 0; j < V::Size; ++j) {
