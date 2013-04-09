@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 # coding:utf-8
+require 'tmpdir'
 
-argv = ARGV
-gnuplotOptions = {# {{{
+$argv = ARGV
+$gnuplotOptions = {# {{{
     :font => 'CM Sans,8',
     :size => '19.55cm,11cm',
     :svg => false
@@ -87,7 +88,7 @@ class SortOrder #{{{1
         end
     end
 end #}}}1
-benchmarks = {
+$benchmarks = {
     'interleavedmemorywrapper' => { #{{{1
         :key => 'right top',
         :sort => [:groups, :bars, :clusters],
@@ -218,38 +219,39 @@ benchmarks = {
         :ylabel => 'Operations / Cycle'
     } #}}}1
 }
-if argv.include? '--help' or argv.include? '-h'# {{{
+if $argv.include? '--help' or $argv.include? '-h'# {{{
     puts "Usage: plot.rb [<options>] [<list of benchmarks>]"
     puts
     puts "Options:"
     puts "  -h|--help            This message."
     puts "  --debug              Only print gnuplot script to stdout."
-    puts "  --font <family,size> Define the font. (default: #{gnuplotOptions[:font]})"
-    puts "  --size <w,h>         Define the page size. (default: #{gnuplotOptions[:size]})"
+    puts "  --font <family,size> Define the font. (default: #{$gnuplotOptions[:font]})"
+    puts "  --size <w,h>         Define the page size. (default: #{$gnuplotOptions[:size]})"
     puts "  --svg                Output to SVG instead of PDF"
+    puts "  --compare <tarball1> <tarball2>  Plot the differences between two benchmark runs"
     puts
     puts "Available benchmarks:"
-    benchmarks.each do |b|
+    $benchmarks.each do |b|
         puts "  #{b[0]}"
     end
     puts "  mandelbrot"
     exit
 end# }}}
-if argv.include? '--font'# {{{
-    p = argv[argv.index('--font') + 1]
-    argv = argv - ['--font', p]
-    gnuplotOptions[:font] = p
+if $argv.include? '--font'# {{{
+    p = $argv[$argv.index('--font') + 1]
+    $argv = $argv - ['--font', p]
+    $gnuplotOptions[:font] = p
 end
-if argv.include? '--size'
-    p = argv[argv.index('--size') + 1]
-    argv = argv - ['--size', p]
-    gnuplotOptions[:size] = p
+if $argv.include? '--size'
+    p = $argv[$argv.index('--size') + 1]
+    $argv = $argv - ['--size', p]
+    $gnuplotOptions[:size] = p
 end
-if argv.include? '--svg'
-    argv = argv - ['--svg']
-    gnuplotOptions[:svg] = true
+if $argv.include? '--svg'
+    $argv = $argv - ['--svg']
+    $gnuplotOptions[:svg] = true
 end# }}}
-sortOrder = SortOrder.new([ #{{{1
+$sortOrder = SortOrder.new([ #{{{1
     'sfloat_v',
     'float_v',
     'double_v',
@@ -390,12 +392,15 @@ class DataParser #{{{1
         end
         return r;
     end
-
-    def initialize(bench, tr) #{{{2
-        @bench = bench
-        @impl = Array.new
+    def squaredSum(x, y)# {{{
+        return Math.sqrt(x * x + y * y)
+    end# }}}
+    def initialize(bench, tr, dirs = []) #{{{2
         @data = Array.new
         @colnames = Array.new
+        Dir.chdir dirs[0] unless dirs.empty?
+        versionline = nil
+        colheads = nil
         Dir.glob("#{bench}_*.dat").each do |filename|
             dat = File.new(filename, "r")
             versionline = dat.readline.strip.match /^Version (\d+)$/
@@ -409,13 +414,39 @@ class DataParser #{{{1
                 fail if @colnames != colheads.split("\"\t\"")
             end
             impl = '"' + filename[bench.length + 1..-5] + '"'
-            @impl << impl
             impl = tr.translate impl
             dat.readlines.each do |line|
                 @data.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
             end
         end
         @colnames << "Implementation"
+        if !dirs.empty?
+            Dir.chdir dirs[1]
+            data2 = Array.new
+            Dir.glob("#{bench}_*.dat").each do |filename|
+                dat = File.new(File.join(dirs[1], filename), "r")
+                fail unless versionline == dat.readline.strip.match(/^Version (\d+)$/)
+                fail unless colheads == dat.readline.strip[1..-2]
+                impl = tr.translate('"' + filename[bench.length + 1..-5] + '"')
+                dat.readlines.each do |line|
+                    data2.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
+                end
+            end
+            @data = [@data, data2].transpose.map do |lines|
+                (lines + [@colnames]).transpose.map do |pair|
+                    if pair[0] =~ /^"(.*)"$/
+                        fail "#{pair[0]} != #{pair[1]}" if pair[0] != pair[1]
+                        pair[0]
+                    elsif pair[0] =~ /^\d*$/
+                        (pair[0].to_i - pair[1].to_i).to_s
+                    elsif pair[2] =~ /_stddev$/
+                        squaredSum(pair[0].to_f, pair[1].to_f).to_s
+                    else
+                        (pair[0].to_f - pair[1].to_f).to_s
+                    end
+                end
+            end
+        end
     end
 
     def empty? #{{{2
@@ -485,14 +516,14 @@ class DataParser #{{{1
     end #}}}2
     attr_reader :version
 end #}}}1
-gnuplot = if argv.include? '--debug' #{{{1
-    argv = argv - ['--debug']
+$gnuplot = if $argv.include? '--debug' #{{{1
+    $argv = $argv - ['--debug']
     STDOUT
 else
     IO.popen("gnuplot", 'w')
 end #}}}1
 #gnuplot header{{{1
-gnuplot.print <<EOF
+$gnuplot.print <<EOF
 set style line  1 lc rgbcolor "#CCCCCC"
 set grid y ls 1
 set autoscale y
@@ -529,12 +560,12 @@ set style line 24 lc rgbcolor "#737373"
 set style increment user
 
 EOF
-if gnuplotOptions[:svg]
-    gnuplot.puts "set terminal svg noenhanced size #{gnuplotOptions[:size]} font \"#{gnuplotOptions[:font]}\""
+if $gnuplotOptions[:svg]
+    $gnuplot.puts "set terminal svg noenhanced size #{$gnuplotOptions[:size]} font \"#{$gnuplotOptions[:font]}\""
 else
-    gnuplot.puts "set terminal pdf color noenhanced font \"#{gnuplotOptions[:font]}\" size #{gnuplotOptions[:size]}"
+    $gnuplot.puts "set terminal pdf color noenhanced font \"#{$gnuplotOptions[:font]}\" size #{$gnuplotOptions[:size]}"
 end
-gnuplot.print <<EOF
+$gnuplot.print <<EOF
 set pointsize 0.6
 set bars fullwidth
 set style histogram errorbars gap 1 lw 1
@@ -552,106 +583,108 @@ set bmargin 3.5
 EOF
 #}}}1
 # ##### MAIN: process benchmarks {{{1
-pdfs = Array.new
-(argv.empty? ? benchmarks : (argv - ['mandelbrot'])).each do |bench|
-    if bench.is_a? Array
-        opt = bench[1]
-        bench = bench[0]
-    else
-        opt = benchmarks[bench]
-    end
-    labelTranslation = opt[:labelTranslation] ? opt[:labelTranslation] : LabelTranslation.new
+$pdfs = Array.new
+class BenchmarkProcessor# {{{
+    def initialize(tmpdirs = [])
+        ($argv.empty? ? $benchmarks : ($argv - ['mandelbrot'])).each do |bench|
+            if bench.is_a? Array
+                opt = bench[1]
+                bench = bench[0]
+            else
+                opt = $benchmarks[bench]
+            end
+            labelTranslation = opt[:labelTranslation] ? opt[:labelTranslation] : LabelTranslation.new
 
-    parser = DataParser.new(bench, labelTranslation)
-    next if parser.empty?
+            parser = DataParser.new(bench, labelTranslation, tmpdirs)
+            next if parser.empty?
 
-    sort = opt[:sort] ? opt[:sort] : Array.new
-    key = opt[:key] ? opt[:key] : 'left top'
+            sort = opt[:sort] ? opt[:sort] : Array.new
+            key = opt[:key] ? opt[:key] : 'left top'
 
-    col = opt[:dataColumn]
-    if parser.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
-        col = $~[1] + '/' + $~[2] + 's'
-    end
-    maxy = parser.maximumY col
+            col = opt[:dataColumn]
+            if parser.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
+                col = $~[1] + '/' + $~[2] + 's'
+            end
+            maxy = parser.maximumY col
 
-    pdffile = (opt[:outname] or bench) + (gnuplotOptions[:svg] ? '.svg' : '.pdf')
-    pdfs << pdffile
-    gnuplot.print <<EOF
+            pdffile = (opt[:outname] or bench) + ($gnuplotOptions[:svg] ? '.svg' : '.pdf')
+            $pdfs << pdffile
+            $gnuplot.print <<EOF
 #set yrange [0:#{maxy}]
-set yrange [0:*]
+set yrange [#{tmpdirs.empty? ? '0' : '*'}:*]
 set output "#{pdffile}"
 set ylabel "#{opt[:ylabel] or opt[:dataColumn].sub /\//, ' / '}"
 set key #{key}
 EOF
 
-    pageNames = parser.list(opt[:pageColumn])
-    pageNames = [nil] if pageNames === nil
-    pageNames = sortOrder.sort pageNames if sort.include? :pages
+            pageNames = parser.list(opt[:pageColumn])
+            pageNames = [nil] if pageNames === nil
+            pageNames = $sortOrder.sort pageNames if sort.include? :pages
 
-    groupNames = parser.list(opt[:groupColumn])
-    groupNames = [nil] if groupNames === nil
-    groupNames.map! { |x| [labelTranslation.translate(x), x]}
-    groupNames = sortOrder.sort groupNames if sort.include? :groups
+            groupNames = parser.list(opt[:groupColumn])
+            groupNames = [nil] if groupNames === nil
+            groupNames.map! { |x| [labelTranslation.translate(x), x]}
+            groupNames = $sortOrder.sort groupNames if sort.include? :groups
 
-    titleNames = parser.list(opt[:barColumns])
-    titleNames.map! { |x| [labelTranslation.translate(x), x]}
-    titleNames = sortOrder.sort titleNames if sort.include? :bars
+            titleNames = parser.list(opt[:barColumns])
+            titleNames.map! { |x| [labelTranslation.translate(x), x]}
+            titleNames = $sortOrder.sort titleNames if sort.include? :bars
 
-    clusterNames = parser.list(opt[:clusterColumns])
-    parser.sort opt[:clusterColumns], sortOrder if sort.include? :clusters
+            clusterNames = parser.list(opt[:clusterColumns])
+            parser.sort opt[:clusterColumns], $sortOrder if sort.include? :clusters
 
-    pageNames.each do |page|
-        data = ''
-        gnuplot_print = Array.new
-        at = 0
-        groupNames.each do |group|
-            filters = Array.new
-            titleNames.each do |title|
-                filters \
-                    << ColumnFilter.new([page, group[1], title[1]],
-                                        [[title[0], col]]) \
-                    << ColumnFilter.new([page, group[1], title[1]],
-                                        [[title[0] + ' stddev', col + '_stddev']])
-            end
-            tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
-            tmp = tmp[tmp.index("\n")+1..-1] if at > 0
-            titleNames.size.times { data << tmp }
+            pageNames.each do |page|
+                data = ''
+                gnuplot_print = Array.new
+                at = 0
+                groupNames.each do |group|
+                    filters = Array.new
+                    titleNames.each do |title|
+                        filters \
+                            << ColumnFilter.new([page, group[1], title[1]],
+                                                [[title[0], col]]) \
+                            << ColumnFilter.new([page, group[1], title[1]],
+                                                [[title[0] + ' stddev', col + '_stddev']])
+                    end
+                    tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
+                    tmp = tmp[tmp.index("\n")+1..-1] if at > 0
+                    titleNames.size.times { data << tmp }
 
-            if group[1] != nil
-                gnuplot_print << "  newhistogram \" \\r#{group[0]}\" at #{at}"
-            end
-            1.upto(titleNames.size) do |i|
-                i2 = i * 2
-                gnuplot_print << "  '-' using #{i2}:#{i2+1}:xtic(1) lt #{i} " +
-                if at == 0
-                    "title columnheader(#{i2})"
-                else
-                    "notitle"
+                    if group[1] != nil
+                        gnuplot_print << "  newhistogram \" \\r#{group[0]}\" at #{at}"
+                    end
+                    1.upto(titleNames.size) do |i|
+                        i2 = i * 2
+                        gnuplot_print << "  '-' using #{i2}:#{i2+1}:xtic(1) lt #{i} " +
+                        if at == 0
+                            "title columnheader(#{i2})"
+                        else
+                            "notitle"
+                        end
+                    end
+                    at += clusterNames.size + 2.0 / (titleNames.size + 1)
                 end
-            end
-            at += clusterNames.size + 2.0 / (titleNames.size + 1)
-        end
-        pagetitle = labelTranslation.translate(bench)
-        if page
-            pagetitle += "\\n" + labelTranslation.translate(page)
-        end
-        gnuplot.print <<EOF
+                pagetitle = labelTranslation.translate(bench)
+                if page
+                    pagetitle += "\\n" + labelTranslation.translate(page)
+                end
+                $gnuplot.print <<EOF
 set title "#{pagetitle}"
 plot \
 #{gnuplot_print.join(", \\\n")}
 #{data}
 EOF
-    end
-end #}}}1
-if argv.empty? or argv.include? "mandelbrot" #{{{1
-    tr = LabelTranslation.new
-    mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
+            end
+        end #}}}1
+        if $argv.empty? or $argv.include? "mandelbrot" #{{{1
+            tr = LabelTranslation.new
+            mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
 
-    if not mandeldat.empty?
-        pdffile = 'mandelbrot.pdf'
-        pdfs << pdffile
+            if not mandeldat.empty?
+                pdffile = 'mandelbrot.pdf'
+                $pdfs << pdffile
 
-        gnuplot.print <<EOF
+                $gnuplot.print <<EOF
 set ytics auto
 set xtics 100
 
@@ -681,14 +714,41 @@ set ylabel "speedup"
 plot \\
 #{(mandeldat.map {|x| "'#{x[0]}' using 1:($3/$2) title \"#{x[1]} vs. builtin\""}).join(", \\\n")}
 EOF
+            end
+        end #}}}1
     end
-end #}}}1
-# all.pdf {{{1
-gnuplot.close
+end# }}}
+if $argv.include? '--compare'# {{{
+    i = $argv.index('--compare')
+    tarballs = $argv[i + 1, 2]
+    $argv = $argv - (['--compare'] + tarballs)
+    tarballs.map! { |f| File.expand_path f }
 
-if argv.empty?
+    # 1. untar the two tarballs at a temporary location
+    if File.exist?(tarballs[0]) and File.exist?(tarballs[1])
+        olddir = Dir.getwd
+        Dir.mktmpdir('vc-benchmarks-plot') do |tmpdir0|
+            Dir.chdir tmpdir0
+            system 'tar', '--strip-components=1', '-xf', tarballs[0]
+            Dir.mktmpdir('vc-benchmarks-plot') do |tmpdir1|
+                Dir.chdir tmpdir1
+                system 'tar', '--strip-components=1', '-xf', tarballs[1]
+                BenchmarkProcessor.new [tmpdir0, tmpdir1]
+            end
+        end
+        Dir.chdir olddir
+    else
+        fail "Error: could not find the specified tarballs"
+    end
+else
+    BenchmarkProcessor.new
+end# }}}
+# all.pdf {{{1
+$gnuplot.close
+
+if $argv.empty?
     `a2ps -q -M a4 -l 120 --columns=1 --rows=1 metadata -o -|ps2pdf -sPAPERSIZE=a4 - metadata.pdf`
-    `pdftk metadata.pdf #{pdfs.join ' '} cat output tmp.pdf` or fail
+    `pdftk metadata.pdf #{$pdfs.join ' '} cat output tmp.pdf` or fail
     metain = File.new 'metadata', 'r'
     metaout = File.new 'tmp.txt', 'w'
     title = Array.new
