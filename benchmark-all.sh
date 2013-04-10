@@ -97,7 +97,7 @@ executeBench()
     else
       $haveAvx && outfile=${outfile}-mavx
     fi
-    outfile=${outfile}.dat
+    outfile=${outfile}-run$3.dat
     printf "%22s -o %s\tStarted.\n" "$name" "$outfile"
     if numactl --physcpubind=$coreid --localalloc ./$name -o $outfile >/dev/null 2>&1; then
       printf "%22s -o %s\tDone.\n" "$name" "$outfile"
@@ -116,12 +116,14 @@ if which benchmarking.sh >/dev/null; then
   benchmarking.sh start
 fi
 
+for run in 1 2 3; do
 for bench in \
   interleavedmemorywrapper flops arithmetics2 gather scatter mask compare math memio dhryrock whetrock mandelbrotbench
 do
-  executeBench $bench scalar
-  $haveSse && executeBench $bench sse
-  $haveAvx && executeBench $bench avx
+  executeBench $bench scalar $run
+  $haveSse && executeBench $bench sse $run
+  $haveAvx && executeBench $bench avx $run
+done
 done
 
 if which benchmarking.sh >/dev/null; then
