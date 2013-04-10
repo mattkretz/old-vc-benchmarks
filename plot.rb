@@ -398,51 +398,53 @@ class DataParser #{{{1
     def initialize(bench, tr, dirs = []) #{{{2
         @data = Array.new
         @colnames = Array.new
-        Dir.chdir dirs[0] unless dirs.empty?
         versionline = nil
         colheads = nil
-        Dir.glob("#{bench}_*.dat").each do |filename|
-            dat = File.new(filename, "r")
-            versionline = dat.readline.strip.match /^Version (\d+)$/
-            tmp = $~[1].to_i
-            colheads = dat.readline.strip[1..-2]
-            if @version === nil
-                @version = tmp
-                @colnames = colheads.split("\"\t\"")
-            else
-                fail if @version != tmp
-                fail if @colnames != colheads.split("\"\t\"")
-            end
-            impl = '"' + filename[bench.length + 1..-5] + '"'
-            impl = tr.translate impl
-            dat.readlines.each do |line|
-                @data.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
+        Dir.chdir dirs.empty? ? '.' : dirs[0] do
+            Dir.glob("#{bench}_*.dat").each do |filename|
+                dat = File.new(filename, "r")
+                versionline = dat.readline.strip.match /^Version (\d+)$/
+                tmp = $~[1].to_i
+                colheads = dat.readline.strip[1..-2]
+                if @version === nil
+                    @version = tmp
+                    @colnames = colheads.split("\"\t\"")
+                else
+                    fail if @version != tmp
+                    fail if @colnames != colheads.split("\"\t\"")
+                end
+                impl = '"' + filename[bench.length + 1..-5] + '"'
+                impl = tr.translate impl
+                dat.readlines.each do |line|
+                    @data.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
+                end
             end
         end
         @colnames << "Implementation"
         if !dirs.empty?
-            Dir.chdir dirs[1]
-            data2 = Array.new
-            Dir.glob("#{bench}_*.dat").each do |filename|
-                dat = File.new(File.join(dirs[1], filename), "r")
-                fail unless versionline == dat.readline.strip.match(/^Version (\d+)$/)
-                fail unless colheads == dat.readline.strip[1..-2]
-                impl = tr.translate('"' + filename[bench.length + 1..-5] + '"')
-                dat.readlines.each do |line|
-                    data2.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
+            Dir.chdir dirs[1] do
+                data2 = Array.new
+                Dir.glob("#{bench}_*.dat").each do |filename|
+                    dat = File.new(File.join(dirs[1], filename), "r")
+                    fail unless versionline == dat.readline.strip.match(/^Version (\d+)$/)
+                    fail unless colheads == dat.readline.strip[1..-2]
+                    impl = tr.translate('"' + filename[bench.length + 1..-5] + '"')
+                    dat.readlines.each do |line|
+                        data2.push(line.strip.split("\t").map{|x| tr.translate x} + [impl])
+                    end
                 end
-            end
-            @data = [@data, data2].transpose.map do |lines|
-                (lines + [@colnames]).transpose.map do |pair|
-                    if pair[0] =~ /^"(.*)"$/
-                        fail "#{pair[0]} != #{pair[1]}" if pair[0] != pair[1]
-                        pair[0]
-                    elsif pair[0] =~ /^\d*$/
-                        (pair[0].to_i - pair[1].to_i).to_s
-                    elsif pair[2] =~ /_stddev$/
-                        squaredSum(pair[0].to_f, pair[1].to_f).to_s
-                    else
-                        (pair[0].to_f - pair[1].to_f).to_s
+                @data = [@data, data2].transpose.map do |lines|
+                    (lines + [@colnames]).transpose.map do |pair|
+                        if pair[0] =~ /^"(.*)"$/
+                            fail "#{pair[0]} != #{pair[1]}" if pair[0] != pair[1]
+                            pair[0]
+                        elsif pair[0] =~ /^\d*$/
+                            (pair[0].to_i - pair[1].to_i).to_s
+                        elsif pair[2] =~ /_stddev$/
+                            squaredSum(pair[0].to_f, pair[1].to_f).to_s
+                        else
+                            (pair[0].to_f - pair[1].to_f).to_s
+                        end
                     end
                 end
             end
@@ -584,32 +586,31 @@ EOF
 #}}}1
 # ##### MAIN: process benchmarks {{{1
 $pdfs = Array.new
-class BenchmarkProcessor# {{{
-    def initialize(tmpdirs = [])
-        ($argv.empty? ? $benchmarks : ($argv - ['mandelbrot'])).each do |bench|
-            if bench.is_a? Array
-                opt = bench[1]
-                bench = bench[0]
-            else
-                opt = $benchmarks[bench]
-            end
-            labelTranslation = opt[:labelTranslation] ? opt[:labelTranslation] : LabelTranslation.new
+def processBenchmark(tmpdirs = [])#{{{
+    ($argv.empty? ? $benchmarks : ($argv - ['mandelbrot'])).each do |bench|#{{{
+        if bench.is_a? Array
+            opt = bench[1]
+            bench = bench[0]
+        else
+            opt = $benchmarks[bench]
+        end
+        labelTranslation = opt[:labelTranslation] ? opt[:labelTranslation] : LabelTranslation.new
 
-            parser = DataParser.new(bench, labelTranslation, tmpdirs)
-            next if parser.empty?
+        parser = DataParser.new(bench, labelTranslation, tmpdirs)
+        next if parser.empty?
 
-            sort = opt[:sort] ? opt[:sort] : Array.new
-            key = opt[:key] ? opt[:key] : 'left top'
+        sort = opt[:sort] ? opt[:sort] : Array.new
+        key = opt[:key] ? opt[:key] : 'left top'
 
-            col = opt[:dataColumn]
-            if parser.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
-                col = $~[1] + '/' + $~[2] + 's'
-            end
-            maxy = parser.maximumY col
+        col = opt[:dataColumn]
+        if parser.version == 3 and col.match /^([^\/]+)s\/([^\/]+)$/ then
+            col = $~[1] + '/' + $~[2] + 's'
+        end
+        maxy = parser.maximumY col
 
-            pdffile = (opt[:outname] or bench) + ($gnuplotOptions[:svg] ? '.svg' : '.pdf')
-            $pdfs << pdffile
-            $gnuplot.print <<EOF
+        pdffile = (opt[:outname] or bench) + ($gnuplotOptions[:svg] ? '.svg' : '.pdf')
+        $pdfs << pdffile
+        $gnuplot.print <<EOF
 #set yrange [0:#{maxy}]
 set yrange [#{tmpdirs.empty? ? '0' : '*'}:*]
 set output "#{pdffile}"
@@ -617,74 +618,74 @@ set ylabel "#{opt[:ylabel] or opt[:dataColumn].sub /\//, ' / '}"
 set key #{key}
 EOF
 
-            pageNames = parser.list(opt[:pageColumn])
-            pageNames = [nil] if pageNames === nil
-            pageNames = $sortOrder.sort pageNames if sort.include? :pages
+        pageNames = parser.list(opt[:pageColumn])
+        pageNames = [nil] if pageNames === nil
+        pageNames = $sortOrder.sort pageNames if sort.include? :pages
 
-            groupNames = parser.list(opt[:groupColumn])
-            groupNames = [nil] if groupNames === nil
-            groupNames.map! { |x| [labelTranslation.translate(x), x]}
-            groupNames = $sortOrder.sort groupNames if sort.include? :groups
+        groupNames = parser.list(opt[:groupColumn])
+        groupNames = [nil] if groupNames === nil
+        groupNames.map! { |x| [labelTranslation.translate(x), x]}
+        groupNames = $sortOrder.sort groupNames if sort.include? :groups
 
-            titleNames = parser.list(opt[:barColumns])
-            titleNames.map! { |x| [labelTranslation.translate(x), x]}
-            titleNames = $sortOrder.sort titleNames if sort.include? :bars
+        titleNames = parser.list(opt[:barColumns])
+        titleNames.map! { |x| [labelTranslation.translate(x), x]}
+        titleNames = $sortOrder.sort titleNames if sort.include? :bars
 
-            clusterNames = parser.list(opt[:clusterColumns])
-            parser.sort opt[:clusterColumns], $sortOrder if sort.include? :clusters
+        clusterNames = parser.list(opt[:clusterColumns])
+        parser.sort opt[:clusterColumns], $sortOrder if sort.include? :clusters
 
-            pageNames.each do |page|
-                data = ''
-                gnuplot_print = Array.new
-                at = 0
-                groupNames.each do |group|
-                    filters = Array.new
-                    titleNames.each do |title|
-                        filters \
-                            << ColumnFilter.new([page, group[1], title[1]],
-                                                [[title[0], col]]) \
-                            << ColumnFilter.new([page, group[1], title[1]],
-                                                [[title[0] + ' stddev', col + '_stddev']])
-                    end
-                    tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
-                    tmp = tmp[tmp.index("\n")+1..-1] if at > 0
-                    titleNames.size.times { data << tmp }
-
-                    if group[1] != nil
-                        gnuplot_print << "  newhistogram \" \\r#{group[0]}\" at #{at}"
-                    end
-                    1.upto(titleNames.size) do |i|
-                        i2 = i * 2
-                        gnuplot_print << "  '-' using #{i2}:#{i2+1}:xtic(1) lt #{i} " +
-                        if at == 0
-                            "title columnheader(#{i2})"
-                        else
-                            "notitle"
-                        end
-                    end
-                    at += clusterNames.size + 2.0 / (titleNames.size + 1)
+        pageNames.each do |page|# {{{
+            data = ''
+            gnuplot_print = Array.new
+            at = 0
+            groupNames.each do |group|
+                filters = Array.new
+                titleNames.each do |title|
+                    filters \
+                        << ColumnFilter.new([page, group[1], title[1]],
+                                            [[title[0], col]]) \
+                        << ColumnFilter.new([page, group[1], title[1]],
+                                            [[title[0] + ' stddev', col + '_stddev']])
                 end
-                pagetitle = labelTranslation.translate(bench)
-                if page
-                    pagetitle += "\\n" + labelTranslation.translate(page)
+                tmp = parser.write(opt[:clusterColumns], filters, labelTranslation) + "e\n"
+                tmp = tmp[tmp.index("\n")+1..-1] if at > 0
+                titleNames.size.times { data << tmp }
+
+                if group[1] != nil
+                    gnuplot_print << "  newhistogram \" \\r#{group[0]}\" at #{at}"
                 end
-                $gnuplot.print <<EOF
+                1.upto(titleNames.size) do |i|
+                    i2 = i * 2
+                    gnuplot_print << "  '-' using #{i2}:#{i2+1}:xtic(1) lt #{i} " +
+                    if at == 0
+                        "title columnheader(#{i2})"
+                    else
+                        "notitle"
+                    end
+                end
+                at += clusterNames.size + 2.0 / (titleNames.size + 1)
+            end
+            pagetitle = labelTranslation.translate(bench)
+            if page
+                pagetitle += "\\n" + labelTranslation.translate(page)
+            end
+            $gnuplot.print <<EOF
 set title "#{pagetitle}"
 plot \
 #{gnuplot_print.join(", \\\n")}
 #{data}
 EOF
-            end
-        end #}}}1
-        if $argv.empty? or $argv.include? "mandelbrot" #{{{1
-            tr = LabelTranslation.new
-            mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
+        end# }}}
+    end #}}}
+    if $argv.empty? or $argv.include? "mandelbrot" #{{{1
+        tr = LabelTranslation.new
+        mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
 
-            if not mandeldat.empty?
-                pdffile = 'mandelbrot.pdf'
-                $pdfs << pdffile
+        if not mandeldat.empty?
+            pdffile = 'mandelbrot.pdf'
+            $pdfs << pdffile
 
-                $gnuplot.print <<EOF
+            $gnuplot.print <<EOF
 set ytics auto
 set xtics 100
 
@@ -714,10 +715,48 @@ set ylabel "speedup"
 plot \\
 #{(mandeldat.map {|x| "'#{x[0]}' using 1:($3/$2) title \"#{x[1]} vs. builtin\""}).join(", \\\n")}
 EOF
+        end
+    end #}}}1
+    $gnuplot.close
+
+    # all.pdf {{{1
+    if $argv.empty?
+        metain = if tmpdirs.empty?
+            `a2ps -q -M a4 -l 120 --columns=1 --rows=1 metadata -o -|ps2pdf -sPAPERSIZE=a4 - metadata.pdf`
+            `pdftk metadata.pdf #{$pdfs.join ' '} cat output tmp.pdf` or fail
+            File.new 'metadata', 'r'
+        else
+            metadatapdfs = Array.new
+            tmpdirs.each do |dir|
+                metadatapdfs << "#{dir}/metadata.pdf"
+                `a2ps -q -M a4 -l 120 --columns=1 --rows=1 #{dir}/metadata -o -|ps2pdf -sPAPERSIZE=a4 - #{dir}/metadata.pdf`
             end
-        end #}}}1
-    end
+            `pdftk #{metadatapdfs.join ' '} #{$pdfs.join ' '} cat output tmp.pdf` or fail
+            $pdfs.each { |f| File.delete f }
+            File.new "#{tmpdirs[0]}/metadata", 'r'
+        end
+        metaout = File.new 'tmp.txt', 'w'
+        title = Array.new
+        metain.readlines.each do |line|
+            key, value = line.chomp.split(/\t+: +/, 2)
+            title << value if ['compiler', 'target arch', 'hostname', 'model name'].include? key
+        end
+        metaout.puts "InfoKey: Title"
+        metaout.puts "InfoValue: #{title.join ' '}"
+        metaout.puts "InfoKey: Creator"
+        metaout.puts "InfoValue: Vc http://compeng.uni-frankfurt.de/?vc"
+        metaout.puts "InfoKey: Producer"
+        metaout.puts "InfoValue: Vc's plot.rb and #{`gnuplot --version`}"
+        metaout.puts "InfoKey: Author"
+        metaout.puts "InfoValue: #{ENV['USER']}"
+        metain.close
+        metaout.close
+        `pdftk tmp.pdf update_info tmp.txt output all.pdf`
+        File.delete('tmp.txt')
+        File.delete('tmp.pdf')
+    end #}}}1
 end# }}}
+
 if $argv.include? '--compare'# {{{
     i = $argv.index('--compare')
     tarballs = $argv[i + 1, 2]
@@ -728,47 +767,17 @@ if $argv.include? '--compare'# {{{
     if File.exist?(tarballs[0]) and File.exist?(tarballs[1])
         olddir = Dir.getwd
         Dir.mktmpdir('vc-benchmarks-plot') do |tmpdir0|
-            Dir.chdir tmpdir0
-            system 'tar', '--strip-components=1', '-xf', tarballs[0]
+            system 'tar', '--strip-components=1', '-C', tmpdir0, '-xf', tarballs[0]
             Dir.mktmpdir('vc-benchmarks-plot') do |tmpdir1|
-                Dir.chdir tmpdir1
-                system 'tar', '--strip-components=1', '-xf', tarballs[1]
-                BenchmarkProcessor.new [tmpdir0, tmpdir1]
+                system 'tar', '--strip-components=1', '-C', tmpdir1, '-xf', tarballs[1]
+                processBenchmark [tmpdir0, tmpdir1]
             end
         end
-        Dir.chdir olddir
     else
         fail "Error: could not find the specified tarballs"
     end
 else
-    BenchmarkProcessor.new
+    processBenchmark
 end# }}}
-# all.pdf {{{1
-$gnuplot.close
-
-if $argv.empty?
-    `a2ps -q -M a4 -l 120 --columns=1 --rows=1 metadata -o -|ps2pdf -sPAPERSIZE=a4 - metadata.pdf`
-    `pdftk metadata.pdf #{$pdfs.join ' '} cat output tmp.pdf` or fail
-    metain = File.new 'metadata', 'r'
-    metaout = File.new 'tmp.txt', 'w'
-    title = Array.new
-    metain.readlines.each do |line|
-        key, value = line.chomp.split(/\t+: +/, 2)
-        title << value if ['compiler', 'target arch', 'hostname', 'model name'].include? key
-    end
-    metaout.puts "InfoKey: Title"
-    metaout.puts "InfoValue: #{title.join ' '}"
-    metaout.puts "InfoKey: Creator"
-    metaout.puts "InfoValue: Vc http://compeng.uni-frankfurt.de/?vc"
-    metaout.puts "InfoKey: Producer"
-    metaout.puts "InfoValue: Vc's plot.rb and #{`gnuplot --version`}"
-    metaout.puts "InfoKey: Author"
-    metaout.puts "InfoValue: #{ENV['USER']}"
-    metain.close
-    metaout.close
-    `pdftk tmp.pdf update_info tmp.txt output all.pdf`
-    File.delete('tmp.txt')
-    File.delete('tmp.pdf')
-end #}}}1
 
 # vim: sw=4 et foldmethod=marker
