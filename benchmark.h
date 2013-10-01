@@ -386,7 +386,7 @@ static inline __attribute__((always_inline)) void _keepXRegister(T x0, T x1, T x
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0));
+        asm volatile("":"+x"(tmp0.data()));
 #else
         blackHole[0] = tmp0;
 #endif
@@ -412,7 +412,7 @@ template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
 template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
     static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
 #ifdef __GNUC__
-        asm volatile("":"+x"(tmp0));
+        asm volatile("":"+x"(tmp0.data()));
 #else
         blackHole[0] = tmp0;
 #endif
