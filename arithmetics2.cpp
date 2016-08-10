@@ -29,85 +29,69 @@ using sfloat_v = Vc::SimdArray<float, short_v::size()>;
 
 template<typename Vector> struct Arithmetics
 {
-    typedef typename Vector::EntryType Scalar;
-    typedef typename Vector::AsArg AsArg;
-    enum { Repetitions = 1024*1024 };
+    enum : int { Repetitions = 1024*1024 };
 
-    static Vc_ALWAYS_INLINE Vector add(AsArg a, AsArg b) { return a + b; }
-    static Vc_ALWAYS_INLINE Vector sub(AsArg a, AsArg b) { return a - b; }
-    static Vc_ALWAYS_INLINE Vector mul(AsArg a, AsArg b) { return a * b; }
-    static Vc_ALWAYS_INLINE Vector div(AsArg a, AsArg b) { return a / b; }
-
-    template<typename Op> static Vc_ALWAYS_INLINE void runImpl1(const char *name, Op op)
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl1(const char *name)
     {
-        const Vector arg0 = Vector::Random();
-        Vector arg1 = Vector::Random();
+        Op op;
+        const Vector rnd = Vector::Random();
         benchmark_loop(Benchmark(name, Vector::Size * Repetitions, "Op")) {
+            Vector arg0 = rnd;
+            Vector arg1 = rnd;
             for (int i = 0; i < Repetitions; ++i) {
-                Vector x0 = op(arg0, arg1);
+                keepResults(arg0);  // ensure it's in a register
+                Vector r0 = op(arg0, arg1);
+                // GCC 5.2 (at least) requires the following order, otherwise it introduces two
+                // unnecessary vmovaps instructions into the measured loop
                 keepResultsDirty(arg1);
-                keepResults(x0);
+                keepResults(r0);
             }
         }
     }
-    template<typename Op> static Vc_ALWAYS_INLINE void runImpl2(const char *name, Op op)
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl2(const char *name)
     {
+        Op op;
         const Vector arg0 = Vector::Random();
-        Vector arg1 = Vector::Random();
-        Vector arg2 = Vector::Random();
         benchmark_loop(Benchmark(name, 2 * Vector::Size * Repetitions, "Op")) {
+            Vector arg1 = arg0;
             for (int i = 0; i < Repetitions; ++i) {
-                Vector x0 = op(arg0, arg1);
-                keepResultsDirty(arg1);
-                Vector x1 = op(arg0, arg2);
-                keepResultsDirty(arg2);
-                keepResults(x0, x1);
+                keepResults(arg0);  // ensure it's in a register
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
             }
         }
     }
-    template<typename Op> static Vc_ALWAYS_INLINE void runImpl4(const char *name, Op op)
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl4(const char *name)
     {
+        Op op;
         const Vector arg0 = Vector::Random();
-        Vector arg1 = Vector::Random();
-        Vector arg2 = Vector::Random();
-        Vector arg3 = Vector::Random();
-        Vector arg4 = Vector::Random();
         benchmark_loop(Benchmark(name, 4 * Vector::Size * Repetitions, "Op")) {
+            Vector arg1 = arg0;
             for (int i = 0; i < Repetitions; ++i) {
-                Vector x0 = op(arg0, arg1);
-                keepResultsDirty(arg1);
-                Vector x1 = op(arg0, arg2);
-                keepResultsDirty(arg2);
-                Vector x2 = op(arg0, arg3);
-                keepResultsDirty(arg3);
-                Vector x3 = op(arg0, arg4);
-                keepResultsDirty(arg4);
-                keepResults(x0, x1, x2, x3);
+                keepResults(arg0);  // ensure it's in a register
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
             }
         }
     }
-    template<typename Op> static Vc_ALWAYS_INLINE void runImpl8(const char *name, Op op)
+    template<typename Op> static Vc_ALWAYS_INLINE void runImpl8(const char *name)
     {
+        Op op;
         const Vector arg0 = Vector::Random();
-        Vector arg1 = Vector::Random();
-        Vector arg2 = Vector::Random();
-        Vector arg3 = Vector::Random();
-        Vector arg4 = Vector::Random();
-        Vector arg5 = Vector::Random();
-        Vector arg6 = Vector::Random();
-        Vector arg7 = Vector::Random();
-        Vector arg8 = Vector::Random();
         benchmark_loop(Benchmark(name, 8 * Vector::Size * Repetitions, "Op")) {
+            Vector arg1 = arg0;
             for (int i = 0; i < Repetitions; ++i) {
-                Vector x0 = op(arg0, arg1); keepResultsDirty(arg1);
-                Vector x1 = op(arg0, arg2); keepResultsDirty(arg2);
-                Vector x2 = op(arg0, arg3); keepResultsDirty(arg3);
-                Vector x3 = op(arg0, arg4); keepResultsDirty(arg4);
-                Vector x4 = op(arg0, arg5); keepResultsDirty(arg5);
-                Vector x5 = op(arg0, arg6); keepResultsDirty(arg6);
-                Vector x6 = op(arg0, arg7); keepResultsDirty(arg7);
-                Vector x7 = op(arg0, arg8); keepResultsDirty(arg8);
-                keepResults(x0, x1, x2, x3, x4, x5, x6, x7);
+                keepResults(arg0);  // ensure it's in a register
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
+                keepResultsDirty(arg1); keepResults(op(arg0, arg1));
             }
         }
     }
@@ -115,25 +99,25 @@ template<typename Vector> struct Arithmetics
     static void run()
     {
         Benchmark::setColumnData("unrolling", "not unrolled");
-        runImpl1("add", add);
-        runImpl1("sub", sub);
-        runImpl1("mul", mul);
-        runImpl1("div", div);
+        runImpl1<std::plus<>>("add");
+        runImpl1<std::minus<>>("sub");
+        runImpl1<std::multiplies<>>("mul");
+        runImpl1<std::divides<>>("div");
         Benchmark::setColumnData("unrolling", "2x unrolled");
-        runImpl2("add", add);
-        runImpl2("sub", sub);
-        runImpl2("mul", mul);
-        runImpl2("div", div);
+        runImpl2<std::plus<>>("add");
+        runImpl2<std::minus<>>("sub");
+        runImpl2<std::multiplies<>>("mul");
+        runImpl2<std::divides<>>("div");
         Benchmark::setColumnData("unrolling", "4x unrolled");
-        runImpl4("add", add);
-        runImpl4("sub", sub);
-        runImpl4("mul", mul);
-        runImpl4("div", div);
+        runImpl4<std::plus<>>("add");
+        runImpl4<std::minus<>>("sub");
+        runImpl4<std::multiplies<>>("mul");
+        runImpl4<std::divides<>>("div");
         Benchmark::setColumnData("unrolling", "8x unrolled");
-        runImpl8("add", add);
-        runImpl8("sub", sub);
-        runImpl8("mul", mul);
-        runImpl8("div", div);
+        runImpl8<std::plus<>>("add");
+        runImpl8<std::minus<>>("sub");
+        runImpl8<std::multiplies<>>("mul");
+        runImpl8<std::divides<>>("div");
     }
 };
 
