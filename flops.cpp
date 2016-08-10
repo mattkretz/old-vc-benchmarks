@@ -306,7 +306,7 @@ int bmain()
             ///////////////////////////////////////
             timer.Stop();
 
-            const int k = (x[0] < x[1]) && (x[2] < x[3]) && (x[4] < x[5]) && (x[7] < x[6]);
+            const int k = all_of((x[0] < x[1]) && (x[2] < x[3]) && (x[4] < x[5]) && (x[7] < x[6]));
             blackHole &= k;
         }
         timer.Print();
