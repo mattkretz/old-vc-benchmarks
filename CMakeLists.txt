@@ -32,7 +32,7 @@ if(NOT USE_RDTSCP)
 endif()
 
 AddCompilerFlag("-frename-registers")
-AddCompilerFlag("-std=c++11")
+AddCompilerFlag("-std=c++14")
 
 add_custom_target(other VERBATIM)
 add_custom_target(Scalar COMMENT "build Scalar code" VERBATIM)
