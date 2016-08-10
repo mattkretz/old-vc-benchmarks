@@ -69,6 +69,10 @@ for cpu in `find /sys/devices/system/cpu -name "cpu[0-9]*"`; do
             blockedIds[$i]=1
           done
           ;;
+        *,*)
+          for i in ${siblings//,/ }; do
+            blockedIds[$i]=1
+          done
       esac
     fi
   fi
