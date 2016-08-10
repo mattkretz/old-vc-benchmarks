@@ -12,6 +12,10 @@ case "@USE_AVX@" in
   YES|TRUE|true|yes|on|ON) haveAvx=true ;;
   *) haveAvx=false ;;
 esac
+case "@USE_AVX2@" in
+  YES|TRUE|true|yes|on|ON) haveAvx2=true ;;
+  *) haveAvx2=false ;;
+esac
 case "@USE_XOP@" in
   YES|TRUE|true|yes|on|ON) haveXop=true ;;
   *) haveXop=false ;;
@@ -123,6 +127,7 @@ do
   executeBench $bench scalar $run
   $haveSse && executeBench $bench sse $run
   $haveAvx && executeBench $bench avx $run
+  $haveAvx2 && executeBench $bench avx2 $run
 done
 done
 
