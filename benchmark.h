@@ -48,8 +48,6 @@
 
 #include "tsc.h"
 
-#include <common/macros.h>
-
 #ifdef ALWAYS_INLINE
 #define Vc_ALWAYS_INLINE inline ALWAYS_INLINE
 #define Vc_ALWAYS_INLINE_L inline ALWAYS_INLINE_L
