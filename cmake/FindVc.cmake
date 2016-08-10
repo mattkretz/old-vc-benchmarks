@@ -1,12 +1,18 @@
-# Locate the Vc build and source directories.
+# Locate the Vc template library. Vc can be found at https://github.com/VcDevel/Vc
 #
-# Copyright 2009-2012   Matthias Kretz <kretz@kde.org>
+# This file is meant to be copied into projects that want to use Vc. It will
+# search for VcConfig.cmake, which ships with Vc and will provide up-to-date
+# buildsystem changes. Thus there should not be any need to update FindVc.cmake
+# again after you integrated it into your project.
 #
 # This module defines the following variables:
 # Vc_FOUND
 # Vc_INCLUDE_DIR
 # Vc_LIBRARIES
 # Vc_DEFINITIONS
+# Vc_COMPILE_FLAGS
+# Vc_ARCHITECTURE_FLAGS
+# Vc_ALL_FLAGS (the union of the above three variables)
 # Vc_VERSION_MAJOR
 # Vc_VERSION_MINOR
 # Vc_VERSION_PATCH
@@ -20,43 +26,36 @@
 # to use them to skip whole compilation units.
 # Vc_SSE_INTRINSICS_BROKEN
 # Vc_AVX_INTRINSICS_BROKEN
+#
+#=============================================================================
+# Copyright 2009-2015   Matthias Kretz <kretz@kde.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#  * Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#  * Neither the names of contributing organizations nor the
+#    names of its contributors may be used to endorse or promote products
+#    derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS ``AS IS''
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#=============================================================================
 
-set(Vc_FOUND false)
-set(Vc_BINARY_DIR "$ENV{HOME}/obj/Vc" CACHE PATH "Path to the build dir of Vc")
-file(READ "${Vc_BINARY_DIR}/CMakeCache.txt" _Vc_CMakeCache)
-if(_Vc_CMakeCache MATCHES "Vc_SOURCE_DIR:STATIC=([^\n]*)")
-   set(Vc_SOURCE_DIR "${CMAKE_MATCH_1}")
-   mark_as_advanced(Vc_SOURCE_DIR)
+find_package(Vc ${Vc_FIND_VERSION} QUIET NO_MODULE PATHS $ENV{HOME} /opt/Vc)
 
-   set(Vc_INCLUDE_DIR "${Vc_SOURCE_DIR}/include;${Vc_SOURCE_DIR}")
-
-   if(NOT Vc_BINARY_DIR STREQUAL _Vc_PREVIOUS_BINARY_DIR)
-      set(_Vc_PREVIOUS_BINARY_DIR "${Vc_BINARY_DIR}" CACHE STRING "internal")
-      unset(_libVc CACHE)
-      unset(_libCpuId CACHE)
-      find_library(_libVc Vc HINTS "${Vc_BINARY_DIR}" NO_DEFAULT_PATH)
-      find_library(_libCpuId CpuId HINTS "${Vc_BINARY_DIR}" NO_DEFAULT_PATH)
-      mark_as_advanced(_Vc_PREVIOUS_BINARY_DIR _libVc _libCpuId)
-   endif()
-   get_filename_component(Vc_LIB_DIR "${_libVc}" PATH)
-   set(Vc_LIBRARIES "${_libVc}")
-   if(_libCpuId)
-      list(APPEND Vc_LIBRARIES "${_libCpuId}")
-   endif()
-
-   if(EXISTS "${Vc_SOURCE_DIR}/cmake/VcMacros.cmake")
-      set(Vc_CMAKE_MODULES_DIR "${Vc_SOURCE_DIR}/cmake")
-   else()
-      set(Vc_CMAKE_MODULES_DIR "${CMAKE_SOURCE_DIR}/cmake")
-   endif()
-   include("${Vc_CMAKE_MODULES_DIR}/VcMacros.cmake")
-   set(Vc_DEFINITIONS)
-   vc_set_preferred_compiler_flags()
-
-   if(EXISTS "${Vc_SOURCE_DIR}/include/Vc/support.h")
-      add_definitions(-DHAVE_VC_SUPPORT_H)
-   endif()
-
-   message(STATUS "Vc at: ${Vc_BINARY_DIR} ${Vc_SOURCE_DIR} ${Vc_INCLUDE_DIR}")
-   set(Vc_FOUND true)
-endif()
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Vc CONFIG_MODE)
