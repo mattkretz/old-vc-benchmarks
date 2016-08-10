@@ -741,12 +741,16 @@ EOF
             key, value = line.chomp.split(/\t+: +/, 2)
             title << value if ['compiler', 'target arch', 'hostname', 'model name'].include? key
         end
+        metaout.puts "InfoBegin"
         metaout.puts "InfoKey: Title"
-        metaout.puts "InfoValue: #{title.join ' '}"
+        metaout.puts "InfoValue: Vc Benchmarks - #{title.join ' '}"
+        metaout.puts "InfoBegin"
         metaout.puts "InfoKey: Creator"
         metaout.puts "InfoValue: Vc http://compeng.uni-frankfurt.de/?vc"
+        metaout.puts "InfoBegin"
         metaout.puts "InfoKey: Producer"
         metaout.puts "InfoValue: Vc's plot.rb and #{`gnuplot --version`}"
+        metaout.puts "InfoBegin"
         metaout.puts "InfoKey: Author"
         metaout.puts "InfoValue: #{ENV['USER']}"
         metain.close
