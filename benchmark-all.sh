@@ -87,12 +87,14 @@ idleCores=(${usableCores[@]})
 echo "The following cores will be used for parallel execution of the benchmarks: ${idleCores[@]}"
 echo
 
+fifo="$resultsDir/.fifo"
+mkfifo "$fifo"
+
 executeBench()
 {
   name=${1}_${2}
   if [[ -z "${idleCores[@]}" ]]; then
-    wait
-    idleCores=(${usableCores[@]})
+    idleCores=(`cat "$fifo"`)
   fi
   if test -x ./$name; then
     coreid=${idleCores[${#idleCores[@]}-1]}
@@ -113,6 +115,7 @@ executeBench()
       printf "%22s -o %s\tFAILED.\n" "$name" "$outfile"
       rm -f $outfile
     fi
+    echo $coreid > "$fifo" &
     ) &
   else
     printf "%22s SKIPPED\n" "$name"
@@ -134,6 +137,9 @@ do
   $haveAvx2 && executeBench $bench avx2 $run
 done
 done
+wait
+cat "$fifo"
+rm -f "$fifo"
 
 if which benchmarking.sh >/dev/null; then
   echo "Calling 'benchmarking.sh stop' to re-enable powermanagement and Turbo-Mode"
