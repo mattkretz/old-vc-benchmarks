@@ -227,13 +227,20 @@ template<> struct KeepResultsType<2> { typedef  short Type; };
 template<> struct KeepResultsType<4> { typedef    int Type; };
 template<> struct KeepResultsType<8> { typedef double Type; };
 
-template<typename T, int S> struct KeepResultsHelper {
-#ifdef VC_CLANG
-    typedef typename KeepResultsType<S>::Type ST;
-    static ST &cast(T &x) { return reinterpret_cast<ST &>(x); }
-#else
-    static T &cast(T &x) { return x; }
-#endif
+template <typename T,
+          int S,
+          bool = Vc::Traits::isSimdArray<T>::value || Vc::Traits::isSimdMaskArray<T>::value,
+          bool = Vc::is_simd_vector<T>::value || Vc::is_simd_mask<T>::value,
+          bool = Vc::Scalar::is_vector<T>::value || Vc::Scalar::is_mask<T>::value>
+struct KeepResultsHelper {
+    static_assert(std::is_arithmetic<T>::value || sizeof(T) < 16, "The unspecialized KeepResultsHelper only works for builtin types.");
+    template <typename U = void>
+    static decltype(std::declval<T &>().data()) &cast(T &x) {
+        return reinterpret_cast<decltype(std::declval<T &>().data()) &>(x);
+    }
+    template <typename U = void>
+    static T &cast(typename std::enable_if<std::is_same<U, void>::value &&
+                   std::is_arithmetic<T>::value, T &>::type x) { return x; }
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
 #ifdef __GNUC__
         asm volatile("":"+r"(cast(tmp0)));
@@ -281,14 +288,33 @@ template<typename T, int S> struct KeepResultsHelper {
     static T blackHole[8];
 #endif
 };
-#if defined(__GNUC__) && defined(VC_IMPL_Scalar)
-template<int S> struct KeepResultsHelper<Vc::Vector<float>, S> {
-    typedef Vc::Vector<float> T;
-#ifdef VC_CLANG
-    static float &cast(T &x) { return reinterpret_cast<float &>(x); }
+template <typename T, int S>
+struct KeepResultsHelper<T, S, true, true, false> {
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
+        asm volatile("":"+m"(tmp0));
+    }
+    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
+        asm volatile("":"+m"(tmp0),
+                        "+m"(tmp1),
+                        "+m"(tmp2),
+                        "+m"(tmp3));
+    }
+    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
+#ifdef __x86_64__
+        asm volatile(""::"m"(tmp0), "m"(tmp1), "m"(tmp2), "m"(tmp3),
+                         "m"(tmp4), "m"(tmp5), "m"(tmp6), "m"(tmp7));
 #else
-    static T &cast(T &x) { return x; }
+        asm volatile(""::"m"(tmp0), "m"(tmp1), "m"(tmp2), "m"(tmp3));
+        asm volatile(""::"m"(tmp4), "m"(tmp5), "m"(tmp6), "m"(tmp7));
 #endif
+    }
+};
+template <typename T, int S>
+struct KeepResultsHelper<T, S, false, true, false> {
+    static decltype(std::declval<T &>().data()) &cast(T &x) {
+        return reinterpret_cast<decltype(std::declval<T &>().data()) &>(x);
+    }
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
         asm volatile("":"+x"(cast(tmp0)));
     }
@@ -309,61 +335,6 @@ template<int S> struct KeepResultsHelper<Vc::Vector<float>, S> {
 #endif
     }
 };
-template<int S> struct KeepResultsHelper<Vc::Vector<Vc::sfloat>, S> {
-    typedef Vc::Vector<Vc::sfloat> T;
-#ifdef VC_CLANG
-    static float &cast(T &x) { return reinterpret_cast<float &>(x); }
-#else
-    static T &cast(T &x) { return x; }
-#endif
-    static Vc_INTRINSIC void keepDirty(T &tmp0) {
-        asm volatile("":"+x"(cast(tmp0)));
-    }
-    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
-        asm volatile("":"+x"(cast(tmp0)),
-                        "+x"(cast(tmp1)),
-                        "+x"(cast(tmp2)),
-                        "+x"(cast(tmp3)));
-    }
-    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
-            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
-#ifdef __x86_64__
-        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
-                         "x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
-#else
-        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3));
-        asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
-#endif
-    }
-};
-template<int S> struct KeepResultsHelper<Vc::Vector<double>, S> {
-    typedef Vc::Vector<double> T;
-#ifdef VC_CLANG
-    static double &cast(T &x) { return reinterpret_cast<double &>(x); }
-#else
-    static T &cast(T &x) { return x; }
-#endif
-    static Vc_INTRINSIC void keepDirty(T &tmp0) {
-        asm volatile("":"+x"(cast(tmp0)));
-    }
-    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
-        asm volatile("":"+x"(cast(tmp0)),
-                        "+x"(cast(tmp1)),
-                        "+x"(cast(tmp2)),
-                        "+x"(cast(tmp3)));
-    }
-    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
-            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
-#ifdef __x86_64__
-        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
-                         "x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
-#else
-        asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3));
-        asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
-#endif
-    }
-};
-#endif // __GNUC__ && VC_IMPL_Scalar
 
 #ifdef __GNUC__
 template<typename T>
@@ -648,5 +619,11 @@ template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tm
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
 }
+
+namespace Vc_1 {
+template<typename... Ts> inline void forceToRegisters(Ts &...xs) {
+    keepResults(xs...);
+}
+}  // namespace Vc
 
 #endif // BENCHMARK_H
