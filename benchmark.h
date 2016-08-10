@@ -48,15 +48,6 @@
 
 #include "tsc.h"
 
-#ifdef ALWAYS_INLINE
-#define Vc_ALWAYS_INLINE inline ALWAYS_INLINE
-#define Vc_ALWAYS_INLINE_L inline ALWAYS_INLINE_L
-#define Vc_ALWAYS_INLINE_R ALWAYS_INLINE_R
-#endif
-#ifndef Vc_INTRINSIC
-#define Vc_INTRINSIC Vc_ALWAYS_INLINE
-#endif
-
 #ifdef __GNUC__
 #define NOINLINE __attribute__((noinline))
 #endif
@@ -230,6 +221,7 @@ template<> struct KeepResultsType<8> { typedef double Type; };
 template <typename T,
           int S,
           bool = Vc::Traits::isSimdArray<T>::value || Vc::Traits::isSimdMaskArray<T>::value,
+          bool = Vc::Traits::isAtomicSimdArray<T>::value || Vc::Traits::isAtomicSimdMaskArray<T>::value,
           bool = Vc::is_simd_vector<T>::value || Vc::is_simd_mask<T>::value,
           bool = Vc::Scalar::is_vector<T>::value || Vc::Scalar::is_mask<T>::value>
 struct KeepResultsHelper {
@@ -261,7 +253,7 @@ struct KeepResultsHelper {
         blackHole[3] = tmp3;
 #endif
     }
-    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+    static Vc_INTRINSIC void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
             const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
 #ifdef __GNUC__
 #ifdef __x86_64__
@@ -289,42 +281,97 @@ struct KeepResultsHelper {
 #endif
 };
 template <typename T, int S>
-struct KeepResultsHelper<T, S, true, true, false> {
+struct KeepResultsHelper<T, S, true, true, true, false> {
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
-        asm volatile("":"+m"(tmp0));
+        auto &a = internal_data(tmp0);
+        KeepResultsHelper<std::decay_t<decltype(a)>, sizeof(a)>::keepDirty(a);
     }
-    static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
-        asm volatile("":"+m"(tmp0),
-                        "+m"(tmp1),
-                        "+m"(tmp2),
-                        "+m"(tmp3));
-    }
-    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
-            const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
-#ifdef __x86_64__
-        asm volatile(""::"m"(tmp0), "m"(tmp1), "m"(tmp2), "m"(tmp3),
-                         "m"(tmp4), "m"(tmp5), "m"(tmp6), "m"(tmp7));
-#else
-        asm volatile(""::"m"(tmp0), "m"(tmp1), "m"(tmp2), "m"(tmp3));
-        asm volatile(""::"m"(tmp4), "m"(tmp5), "m"(tmp6), "m"(tmp7));
-#endif
+    static Vc_INTRINSIC void keep(const T &tmp0, const T &tmp1,
+                                  const T &tmp2, const T &tmp3,
+                                  const T &tmp4, const T &tmp5,
+                                  const T &tmp6, const T &tmp7) {
+        auto &a0 = internal_data(tmp0);
+        auto &a1 = internal_data(tmp1);
+        auto &a2 = internal_data(tmp2);
+        auto &a3 = internal_data(tmp3);
+        auto &a4 = internal_data(tmp4);
+        auto &a5 = internal_data(tmp5);
+        auto &a6 = internal_data(tmp6);
+        auto &a7 = internal_data(tmp7);
+        KeepResultsHelper<std::decay_t<decltype(a0)>, sizeof(a0)>::keep(a0, a1, a2, a3, a4, a5, a6, a7);
     }
 };
 template <typename T, int S>
-struct KeepResultsHelper<T, S, false, true, false> {
-    static decltype(std::declval<T &>().data()) &cast(T &x) {
-        return reinterpret_cast<decltype(std::declval<T &>().data()) &>(x);
+struct KeepResultsHelper<T, S, true, false, true, false> {
+    static Vc_INTRINSIC void keepDirty(T &tmp0) {
+        auto &a = internal_data0(tmp0);
+        auto &b = internal_data1(tmp0);
+        KeepResultsHelper<std::decay_t<decltype(a)>, sizeof(a)>::keepDirty(a);
+        KeepResultsHelper<std::decay_t<decltype(b)>, sizeof(b)>::keepDirty(b);
+    }
+    static Vc_INTRINSIC void keep(const T &tmp0, const T &tmp1,
+                                  const T &tmp2, const T &tmp3,
+                                  const T &tmp4, const T &tmp5,
+                                  const T &tmp6, const T &tmp7) {
+        auto &a0 = internal_data0(tmp0);
+        auto &a1 = internal_data0(tmp1);
+        auto &a2 = internal_data0(tmp2);
+        auto &a3 = internal_data0(tmp3);
+        auto &a4 = internal_data0(tmp4);
+        auto &a5 = internal_data0(tmp5);
+        auto &a6 = internal_data0(tmp6);
+        auto &a7 = internal_data0(tmp7);
+        KeepResultsHelper<std::decay_t<decltype(a0)>, sizeof(a0)>::keep(a0, a1, a2, a3, a4, a5, a6, a7);
+
+        auto &b0 = internal_data1(tmp0);
+        auto &b1 = internal_data1(tmp1);
+        auto &b2 = internal_data1(tmp2);
+        auto &b3 = internal_data1(tmp3);
+        auto &b4 = internal_data1(tmp4);
+        auto &b5 = internal_data1(tmp5);
+        auto &b6 = internal_data1(tmp6);
+        auto &b7 = internal_data1(tmp7);
+        KeepResultsHelper<std::decay_t<decltype(b0)>, sizeof(b0)>::keep(b0, b1, b2, b3, b4, b5, b6, b7);
+    }
+};
+template <typename T> struct Intrinsic;
+#ifdef __SSE2__
+template <typename T> struct Intrinsic<Vc::Vector<T, Vc::VectorAbi::Sse>> {
+    using type = __m128;
+};
+template <typename T> struct Intrinsic<Vc::Mask<T, Vc::VectorAbi::Sse>> {
+    using type = __m128;
+};
+#ifdef __AVX__
+template <typename T> struct Intrinsic<Vc::Vector<T, Vc::VectorAbi::Avx>> {
+    using type = __m256;
+};
+template <typename T> struct Intrinsic<Vc::Mask<T, Vc::VectorAbi::Avx>> {
+    using type = __m256;
+};
+#endif
+template <typename T, std::size_t N, typename V>
+struct Intrinsic<Vc::SimdArray<T, N, V, N>> {
+    using type = typename Intrinsic<V>::type;
+};
+template <typename T, std::size_t N, typename V>
+struct Intrinsic<Vc::SimdMaskArray<T, N, V, N>> {
+    using type = typename Intrinsic<V>::type;
+};
+template <typename T, int S>
+struct KeepResultsHelper<T, S, false, false, true, false> {
+    using Intrin = typename Intrinsic<T>::type;
+    static Vc_INTRINSIC Intrin &cast(T &x) {
+        return reinterpret_cast<Intrin &>(x);
     }
     static Vc_INTRINSIC void keepDirty(T &tmp0) {
         asm volatile("":"+x"(cast(tmp0)));
     }
     static Vc_INTRINSIC void keepDirty(T &tmp0, T &tmp1, T &tmp2, T &tmp3) {
-        asm volatile("":"+x"(cast(tmp0)),
-                        "+x"(cast(tmp1)),
-                        "+x"(cast(tmp2)),
-                        "+x"(cast(tmp3)));
+        asm volatile("":"+x"(cast(tmp0)), "+x"(cast(tmp1)),
+                        "+x"(cast(tmp2)), "+x"(cast(tmp3)));
     }
-    static inline void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
+    static Vc_INTRINSIC void keep(const T &tmp0, const T &tmp1, const T &tmp2, const T &tmp3,
             const T &tmp4, const T &tmp5, const T &tmp6, const T &tmp7) {
 #ifdef __x86_64__
         asm volatile(""::"x"(tmp0), "x"(tmp1), "x"(tmp2), "x"(tmp3),
@@ -334,239 +381,6 @@ struct KeepResultsHelper<T, S, false, true, false> {
         asm volatile(""::"x"(tmp4), "x"(tmp5), "x"(tmp6), "x"(tmp7));
 #endif
     }
-};
-
-#ifdef __GNUC__
-template<typename T>
-static inline __attribute__((always_inline)) void _keepXRegister(T x0, T x1, T x2, T x3, T x4, T x5, T x6, T x7)
-{
-    asm (""::"x"(x0));
-    asm (""::"x"(x1));
-    asm (""::"x"(x2));
-    asm (""::"x"(x3));
-    asm (""::"x"(x4));
-    asm (""::"x"(x5));
-    asm (""::"x"(x6));
-    asm (""::"x"(x7));
-}
-#endif
-
-#if defined(VC_IMPL_AVX)
-template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
-    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static inline void keep(Vc::Vector<T> tmp0, Vc::Vector<T> tmp1, Vc::Vector<T> tmp2, Vc::Vector<T> tmp3,
-            Vc::Vector<T> tmp4, Vc::Vector<T> tmp5, Vc::Vector<T> tmp6, Vc::Vector<T> tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.data(), tmp1.data(), tmp2.data(), tmp3.data(), tmp4.data(), tmp5.data(), tmp6.data(), tmp7.data());
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::Vector<T> blackHole[8];
-#endif
-};
-template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
-    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.data()));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static inline void keep(Vc::Vector<T> tmp0, Vc::Vector<T> tmp1, Vc::Vector<T> tmp2, Vc::Vector<T> tmp3,
-            Vc::Vector<T> tmp4, Vc::Vector<T> tmp5, Vc::Vector<T> tmp6, Vc::Vector<T> tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.data(), tmp1.data(), tmp2.data(), tmp3.data(), tmp4.data(), tmp5.data(), tmp6.data(), tmp7.data());
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::Vector<T> blackHole[8];
-#endif
-};
-template<unsigned int S1, size_t S2, int S3> struct KeepResultsHelper<Vc::AVX::Mask<S1, S2>, S3> {
-    static Vc_INTRINSIC void keepDirty(Vc::AVX::Mask<S1, S2> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.k));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static Vc_INTRINSIC void keepDirty(Vc::AVX::Mask<S1, S2> &tmp0, Vc::AVX::Mask<S1, S2> &tmp1, Vc::AVX::Mask<S1, S2> &tmp2, Vc::AVX::Mask<S1, S2> &tmp3) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.k), "+x"(tmp1.k), "+x"(tmp2.k), "+x"(tmp3.k));
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-#endif
-    }
-    static inline void keep(Vc::AVX::Mask<S1, S2> tmp0, Vc::AVX::Mask<S1, S2> tmp1, Vc::AVX::Mask<S1, S2> tmp2, Vc::AVX::Mask<S1, S2> tmp3,
-            Vc::AVX::Mask<S1, S2> tmp4, Vc::AVX::Mask<S1, S2> tmp5, Vc::AVX::Mask<S1, S2> tmp6, Vc::AVX::Mask<S1, S2> tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.data(), tmp1.data(), tmp2.data(), tmp3.data(), tmp4.data(), tmp5.data(), tmp6.data(), tmp7.data());
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::AVX::Mask<S1, S2> blackHole[8];
-#endif
-};
-#elif defined(VC_IMPL_SSE)
-template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 16> {
-    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.d.data));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static inline void keep(const Vc::Vector<T> &tmp0, const Vc::Vector<T> &tmp1, const Vc::Vector<T> &tmp2, const Vc::Vector<T> &tmp3,
-            const Vc::Vector<T> &tmp4, const Vc::Vector<T> &tmp5, const Vc::Vector<T> &tmp6, const Vc::Vector<T> &tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.d.data, tmp1.d.data, tmp2.d.data, tmp3.d.data, tmp4.d.data, tmp5.d.data, tmp6.d.data, tmp7.d.data);
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::Vector<T> blackHole[8];
-#endif
-};
-template<typename T> struct KeepResultsHelper<Vc::Vector<T>, 32> {
-    static Vc_INTRINSIC void keepDirty(Vc::Vector<T> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.d.data.d[0]), "+x"(tmp0.d.data.d[1]));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static inline void keep(const Vc::Vector<T> &tmp0, const Vc::Vector<T> &tmp1, const Vc::Vector<T> &tmp2, const Vc::Vector<T> &tmp3,
-            const Vc::Vector<T> &tmp4, const Vc::Vector<T> &tmp5, const Vc::Vector<T> &tmp6, const Vc::Vector<T> &tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.d.data.d[0], tmp0.d.data.d[1], tmp1.d.data.d[0], tmp1.d.data.d[1], tmp2.d.data.d[0], tmp2.d.data.d[1], tmp3.d.data.d[0], tmp3.d.data.d[1]);
-        _keepXRegister(tmp4.d.data.d[0], tmp4.d.data.d[1], tmp5.d.data.d[0], tmp5.d.data.d[1], tmp6.d.data.d[0], tmp6.d.data.d[1], tmp7.d.data.d[0], tmp7.d.data.d[1]);
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::Vector<T> blackHole[8];
-#endif
-};
-template<unsigned int S> struct KeepResultsHelper<Vc::SSE::Mask<S>, 16> {
-    static Vc_INTRINSIC void keepDirty(Vc::SSE::Mask<S> &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.k));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static Vc_INTRINSIC void keepDirty(Vc::SSE::Mask<S> &tmp0, Vc::SSE::Mask<S> &tmp1, Vc::SSE::Mask<S> &tmp2, Vc::SSE::Mask<S> &tmp3) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.k), "+x"(tmp1.k), "+x"(tmp2.k), "+x"(tmp3.k));
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-#endif
-    }
-    static inline void keep(const Vc::SSE::Mask<S> &tmp0, const Vc::SSE::Mask<S> &tmp1, const Vc::SSE::Mask<S> &tmp2, const Vc::SSE::Mask<S> &tmp3,
-            const Vc::SSE::Mask<S> &tmp4, const Vc::SSE::Mask<S> &tmp5, const Vc::SSE::Mask<S> &tmp6, const Vc::SSE::Mask<S> &tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.data(), tmp1.data(), tmp2.data(), tmp3.data(), tmp4.data(), tmp5.data(), tmp6.data(), tmp7.data());
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::SSE::Mask<S> blackHole[8];
-#endif
-};
-template<> struct KeepResultsHelper<Vc::SSE::Float8Mask, 32> {
-    static Vc_INTRINSIC void keepDirty(Vc::SSE::Float8Mask &tmp0) {
-#ifdef __GNUC__
-        asm volatile("":"+x"(tmp0.k[0]), "+x"(tmp0.k[1]));
-#else
-        blackHole[0] = tmp0;
-#endif
-    }
-    static Vc_INTRINSIC void keepDirty(Vc::SSE::Float8Mask &tmp0, Vc::SSE::Float8Mask &tmp1, Vc::SSE::Float8Mask &tmp2, Vc::SSE::Float8Mask &tmp3) {
-#ifdef __GNUC__
-        asm volatile("":"+m"(tmp2), "+m"(tmp3));
-        asm volatile("":"+x"(tmp0.k[0]), "+x"(tmp0.k[1]), "+x"(tmp1.k[0]), "+x"(tmp1.k[1]));
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-#endif
-    }
-    static inline void keep(Vc::SSE::Float8Mask::Argument tmp0, Vc::SSE::Float8Mask::Argument tmp1, Vc::SSE::Float8Mask::Argument tmp2, Vc::SSE::Float8Mask::Argument tmp3,
-            Vc::SSE::Float8Mask::Argument tmp4, Vc::SSE::Float8Mask::Argument tmp5, Vc::SSE::Float8Mask::Argument tmp6, Vc::SSE::Float8Mask::Argument tmp7) {
-#ifdef __GNUC__
-        _keepXRegister(tmp0.data()[0], tmp0.data()[1], tmp1.data()[0], tmp1.data()[1], tmp2.data()[0], tmp2.data()[1], tmp3.data()[0], tmp3.data()[1]);
-        _keepXRegister(tmp4.data()[0], tmp4.data()[1], tmp5.data()[0], tmp5.data()[1], tmp6.data()[0], tmp6.data()[1], tmp7.data()[0], tmp7.data()[1]);
-    }
-#else
-        blackHole[0] = tmp0;
-        blackHole[1] = tmp1;
-        blackHole[2] = tmp2;
-        blackHole[3] = tmp3;
-        blackHole[4] = tmp4;
-        blackHole[5] = tmp5;
-        blackHole[6] = tmp6;
-        blackHole[7] = tmp7;
-    }
-    static Vc::SSE::Float8Mask blackHole[8];
-#endif
 };
 #endif
 
@@ -580,48 +394,48 @@ template<typename T> static Vc_INTRINSIC void keepResultsDirty(T &tmp0, T &tmp1,
     KeepResultsHelper<T, sizeof(T)>::keepDirty(tmp0, tmp1, tmp2, tmp3);
 }
 
-template<typename T> static inline void keepResults(T tmp0)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp0, tmp0, tmp0, tmp0, tmp0, tmp0, tmp0);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp0, tmp1, tmp0, tmp1, tmp0, tmp1);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp1, tmp0, tmp2, tmp0, tmp1);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tmp3)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2, T tmp3)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp0, tmp1, tmp2, tmp3);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp4, tmp1, tmp0, tmp1);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp0, tmp1);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5, T tmp6)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5, T tmp6)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp1);
 }
 
-template<typename T> static inline void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5, T tmp6, T tmp7)
+template<typename T> static Vc_INTRINSIC void keepResults(T tmp0, T tmp1, T tmp2, T tmp3, T tmp4, T tmp5, T tmp6, T tmp7)
 {
     KeepResultsHelper<T, sizeof(T)>::keep(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
 }
 
 namespace Vc_1 {
-template<typename... Ts> inline void forceToRegisters(Ts &...xs) {
+template<typename... Ts> Vc_INTRINSIC void forceToRegisters(Ts &...xs) {
     keepResults(xs...);
 }
 }  // namespace Vc
