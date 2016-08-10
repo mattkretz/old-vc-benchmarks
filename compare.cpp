@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 using namespace Vc;
+using sfloat_v = Vc::SimdArray<float, short_v::size()>;
 
 static inline void doNothingButDontOptimize()
 {

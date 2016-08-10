@@ -23,7 +23,7 @@
 
 using Vc::float_v;
 using Vc::short_v;
-using Vc::sfloat_v;
+using sfloat_v = Vc::SimdArray<float, short_v::size()>;
 using Vc::double_v;
 using Vc::int_v;
 

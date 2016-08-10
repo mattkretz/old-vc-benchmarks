@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 using namespace Vc;
+using sfloat_v = Vc::SimdArray<float, short_v::size()>;
 
 // to test
 // a) conditional (masked) assignment
