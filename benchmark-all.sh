@@ -138,7 +138,7 @@ do
 done
 done
 wait
-cat "$fifo"
+cat "$fifo" >/dev/null
 rm -f "$fifo"
 
 if which benchmarking.sh >/dev/null; then
