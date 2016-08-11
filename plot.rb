@@ -679,7 +679,7 @@ EOF
     end #}}}
     if $argv.empty? or $argv.include? "mandelbrot" #{{{1
         tr = LabelTranslation.new
-        mandeldat = Dir.glob("mandelbrotbench_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrotbench_".length..-5])] }
+        mandeldat = Dir.glob("mandelbrot_*.dat").map { |filename| [filename, "Vc::" + tr.translate(filename["mandelbrot_".length..-5])] }
 
         if not mandeldat.empty?
             pdffile = 'mandelbrot.pdf'

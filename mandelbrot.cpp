@@ -19,9 +19,13 @@
 */
 
 #include "tsc.h"
-#include "../examples/mandelbrot/mandel.h"
+#include "mandel.h"
 #include <cstdio>
 #include <cstring>
+#include <iostream>
+#include <unistd.h>
+#include <Vc/global.h>
+#include <Vc/support.h>
 
 class Output
 {
@@ -113,13 +117,6 @@ Output &Output::foo()
     return *this;
 }
 
-template<MandelImpl Impl>
-class MandelHacked : public Mandel<Impl>
-{
-    public:
-        using Mandel<Impl>::mandelMe;
-};
-
 void usage(char **argv)
 {
     printf("Usage: %s [<options>]\n\n", argv[0]);
@@ -130,17 +127,27 @@ void usage(char **argv)
 
 int main(int argc, char **argv)
 {
+    if (!Vc::currentImplementationSupported()) {
+        std::cerr << "CPU or OS requirements not met for the compiled in vector unit!\n";
+        return -1;
+    }
+
 #ifdef SCHED_FIFO_BENCHMARKS
     if (SCHED_FIFO != sched_getscheduler(0)) {
+        char *path = reinterpret_cast<char *>(malloc(strlen(argv[0] + sizeof("rtwrapper"))));
+        strcpy(path, argv[0]);
+        char *slash = strrchr(path, '/');
+        if (slash) {
+            slash[1] = '\0';
+        }
+        strcat(path, "rtwrapper");
         // not realtime priority, check whether the benchmark executable exists
-        execv("./benchmark", argv);
-        // if the execv call works, great. If it doesn't we just continue, but
-        // without realtime prio
+        execv(path, argv);
+        free(path);
+        // if the execv call works, great. If it doesn't we just continue, but without realtime prio
     }
 #endif
 
-    MandelHacked<VcImpl> mandelVc;
-    MandelHacked<ScalarImpl> mandelScalar;
     TimeStampCounter tsc;
 
     Output out(4);
@@ -203,15 +210,15 @@ int main(int argc, char **argv)
         const float scale = 1.f / size;
         const int maxIterations = 255;
 
-        QImage imageVc(3 * size, 2 * size, QImage::Format_RGB32);
+        Image imageVc{3 * size, 2 * size};
         tsc.Start();
-        mandelVc.mandelMe(imageVc, x, y, scale, maxIterations);
+        mandelMe<VcImpl>(imageVc, x, y, scale, maxIterations);
         tsc.Stop();
         out << tsc.Cycles();
 
-        QImage imageScalar(3 * size, 2 * size, QImage::Format_RGB32);
+        Image imageScalar{3 * size, 2 * size};
         tsc.Start();
-        mandelScalar.mandelMe(imageScalar, x, y, scale, maxIterations);
+        mandelMe<ScalarImpl>(imageScalar, x, y, scale, maxIterations);
         tsc.Stop();
         out << tsc.Cycles();
 

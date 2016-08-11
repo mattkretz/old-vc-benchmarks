@@ -72,6 +72,7 @@ macro(vc_generate_plots name)
    add_dependencies(benchmark_data "${generate_target}")
 endmacro(vc_generate_plots)
 
+set(vc_benchmark_additional_sources benchmark.cpp)
 macro(vc_add_benchmark name)
    set(LIBS cpuset)
    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -95,7 +96,7 @@ macro(vc_add_benchmark name)
 
       list(FIND disabled_targets ${target} _disabled)
       if(_disabled EQUAL -1)
-         add_executable(${target} ${name}.cpp benchmark.cpp)
+         add_executable(${target} ${name}.cpp ${vc_benchmark_additional_sources})
          target_link_libraries(${target} ${Vc_LIBRARIES} ${LIBS})
          if(def STREQUAL "scalar")
             add_target_property(${target} COMPILE_FLAGS "-DVc_IMPL=Scalar")
@@ -210,6 +211,9 @@ endif()
 vc_add_benchmark(dhryrock)
 vc_add_benchmark(whetrock)
 
+set(vc_benchmark_additional_sources mandel.cpp)
+vc_add_benchmark(mandelbrot)
+
 add_executable(flops_autovect autoflops.cpp benchmark.cpp)
 target_link_libraries(flops_autovect ${Vc_LIBRARIES} ${LIBS})
 add_executable(flops_noautovect autoflops.cpp benchmark.cpp)
@@ -237,30 +241,6 @@ if(NOT COMPILER_IS_MSVC)
    add_executable(constants constants.cpp benchmark.cpp)
    target_link_libraries(constants ${Vc_LIBRARIES} ${LIBS})
 endif()
-
-#find_package(Qt4)
-#if(QT4_FOUND)
-#   include(${QT_USE_FILE})
-#   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-#   qt4_generate_moc(../examples/mandelbrot/mandel.h moc_mandel.cpp)
-#
-#   set(SOURCES mandelbrot.cpp ../examples/mandelbrot/mandel.cpp
-#      ${CMAKE_CURRENT_BINARY_DIR}/moc_mandel.cpp)
-#
-#   add_executable(mandelbrotbench_sse ${SOURCES})
-#   add_target_property(mandelbrotbench_sse COMPILE_FLAGS "-DVC_IMPL=SSE")
-#   target_link_libraries(mandelbrotbench_sse ${QT_LIBRARIES} ${Vc_LIBRARIES})
-#
-#   add_executable(mandelbrotbench_scalar ${SOURCES})
-#   add_target_property(mandelbrotbench_scalar COMPILE_FLAGS "-DVC_IMPL=Scalar")
-#   target_link_libraries(mandelbrotbench_scalar ${QT_LIBRARIES} ${Vc_LIBRARIES})
-#
-#   if(USE_AVX)
-#      add_executable(mandelbrotbench_avx ${SOURCES})
-#      add_target_property(mandelbrotbench_avx COMPILE_FLAGS "-DVC_IMPL=AVX")
-#      target_link_libraries(mandelbrotbench_avx ${QT_LIBRARIES} ${Vc_LIBRARIES})
-#   endif()
-#endif()
 
 exec_program(${CMAKE_CXX_COMPILER} ARGS --version OUTPUT_VARIABLE CXX_VERSION)
 configure_file(benchmark-all.sh benchmark-all.sh @ONLY)
