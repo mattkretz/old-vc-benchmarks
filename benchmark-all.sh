@@ -26,7 +26,7 @@ case "@USE_FMA4@" in
 esac
 
 cd `dirname $0`
-resultsDir="benchmark-all-`hostname`-`date '+%Y-%m-%d-%H-%M-%S'`"
+resultsDir="`date '+%Y%m%d_%H%M%S'`_`hostname -s||hostname`"
 mkdir $resultsDir || exit
 echo "Storing benchmark results to $PWD/$resultsDir"
 
