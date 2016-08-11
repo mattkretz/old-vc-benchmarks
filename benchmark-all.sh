@@ -45,8 +45,8 @@ target arch	: @TARGET_ARCHITECTURE@
 flags		: `echo '@CMAKE_CXX_FLAGS@'|sed 's/-W[^ ]*//g'|tr -s '[:space:]'`
 Vc branch	: $branch
 Vc revision	: $rev
-hostname	: `hostname`
-machine		: `uname -m`
+hostname	: `hostname -f||hostname`
+machine		: `uname -rmo`
 `grep -m1 -B2 'model name' /proc/cpuinfo`
 EOF
 
@@ -141,12 +141,12 @@ wait
 cat "$fifo" >/dev/null
 rm -f "$fifo"
 
+echo "Packing results into ${resultsDir}.tar.gz"
+tar -czf ${resultsDir}.tar.gz ${resultsDir}/
+
 if which benchmarking.sh >/dev/null; then
   echo "Calling 'benchmarking.sh stop' to re-enable powermanagement and Turbo-Mode"
   benchmarking.sh stop
 fi
-
-echo "Packing results into ${resultsDir}.tar.gz"
-tar -czf ${resultsDir}.tar.gz ${resultsDir}/
 
 # vim: sw=2 et
