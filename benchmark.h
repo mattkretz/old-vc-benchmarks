@@ -45,6 +45,9 @@
 // method to get monotonic mac time, inspired by
 // http://www.wand.net.nz/~smr26/wordpress/2009/01/19/monotonic-time-in-mac-os-x/
 #endif
+#ifdef __SSE2__
+#include <x86intrin.h>
+#endif
 
 #include "tsc.h"
 
